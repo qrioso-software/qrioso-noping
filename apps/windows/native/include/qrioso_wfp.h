@@ -14,7 +14,7 @@
 extern "C" {
 #endif
 
-// Installs or upgrades the Microsoft-attestation-signed WFP driver package.
+// Installs or upgrades the signed WFP driver package selected by the release mode.
 QNP_API bool __cdecl QnpWfpInstall(const wchar_t* driver_directory, int32_t* error_code);
 
 // Removes all filters, stops the driver and removes its package.

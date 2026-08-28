@@ -1,0 +1,20 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{BC8A1FFA-BEE3-4634-8014-F334798102B3}") = "QriosoNoPing.Wfp.Client", "QriosoNoPing.Wfp.Client.vcxproj", "{2DA05FE8-FC37-4090-A190-8DB5579E3D53}"
+EndProject
+Project("{BC8A1FFA-BEE3-4634-8014-F334798102B3}") = "QriosoNoPing.Wfp.Driver", "QriosoNoPing.Wfp.Driver.vcxproj", "{46D04809-FD99-48C2-B913-9057A95830D8}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{2DA05FE8-FC37-4090-A190-8DB5579E3D53}.Release|x64.ActiveCfg = Release|x64
+		{2DA05FE8-FC37-4090-A190-8DB5579E3D53}.Release|x64.Build.0 = Release|x64
+		{46D04809-FD99-48C2-B913-9057A95830D8}.Release|x64.ActiveCfg = Release|x64
+		{46D04809-FD99-48C2-B913-9057A95830D8}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+EndGlobal
+

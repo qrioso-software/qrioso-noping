@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{46D04809-FD99-48C2-B913-9057A95830D8}</ProjectGuid>
+    <RootNamespace>QriosoNoPingWfpDriver</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <TargetVersion>Windows10</TargetVersion>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <DriverTargetPlatform>Universal</DriverTargetPlatform>
+    <DriverType>WDM</DriverType>
+    <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
+    <ConfigurationType>Driver</ConfigurationType>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <TargetName>QriosoNoPing.Wfp</TargetName>
+    <OutDir>$(SolutionDir)build\driver\</OutDir>
+    <IntDir>$(SolutionDir)build\obj\driver\</IntDir>
+    <SignMode>Off</SignMode>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level4</WarningLevel>
+      <TreatWarningAsError>true</TreatWarningAsError>
+      <SpectreMitigation>Spectre</SpectreMitigation>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>NT;_KERNEL_MODE;UNICODE;_UNICODE;NDIS_SUPPORT_NDIS6;POOL_NX_OPTIN_AUTO;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalOptions>/guard:cf /Qspectre %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>ndis.lib;wdmsec.lib;fwpkclnt.lib;uuid.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalOptions>/guard:cf %(AdditionalOptions)</AdditionalOptions>
+    </Link>
+    <DriverSign>
+      <FileDigestAlgorithm>sha256</FileDigestAlgorithm>
+    </DriverSign>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="src\driver\qrioso_wfp_driver.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="include\qrioso_wfp_ioctl.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Inf Include="src\driver\QriosoNoPing.Wfp.inf" />
+  </ItemGroup>
+  <ItemGroup>
+    <FilesToPackage Include="$(TargetPath)" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+</Project>
+

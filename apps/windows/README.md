@@ -18,13 +18,13 @@ La identidad visible es:
 Requisitos:
 
 - Windows 11 x64 con Secure Boot y Memory Integrity habilitables;
-- Visual Studio/Build Tools con .NET Desktop, WinUI, Windows 11 SDK y WDK;
+- Visual Studio/Build Tools con .NET Desktop, C++ x64, WinUI, Windows 11 SDK y WDK;
 - .NET SDK 10;
+- Git for Windows y acceso de red durante la primera preparación nativa;
 - certificado Authenticode de Qrioso con clave privada;
-- DLL oficiales firmadas `tunnel.dll` y `wireguard.dll`;
-- componente WFP x64 con catálogo firmado por Microsoft Hardware Dev Center.
+- acceso a Microsoft Partner Center con un certificado EV asociado para devolver el catálogo del driver firmado.
 
-Los artefactos nativos usan la estructura documentada en `native/README.md`. El build de producción es deliberadamente fail-closed:
+`build-windows.ps1` descarga `wireguard.dll` desde WireGuardNT, compila `tunnel.dll` desde source oficial fijado y compila el componente WFP desde `native/`. Esos archivos se incorporan al paquete y se instalan automáticamente; el usuario no instala WireGuard por separado. La firma Microsoft del catálogo WFP sigue el flujo de `native/README.md`. El build de producción es deliberadamente fail-closed:
 
 ```powershell
 Set-ExecutionPolicy -Scope Process Bypass
@@ -36,4 +36,6 @@ Set-ExecutionPolicy -Scope Process Bypass
 
 Produce `dist\windows\QriosoNoPing-win-x64.zip`. El paquete lleva configuración TLS sellada, firmas con timestamp, catálogo WFP validado y un manifiesto SHA-256 firmado. `install.ps1` verifica todo antes de elevar cambios, instala/actualiza WFP, aplica ACL, registra recuperación del servicio, crea accesos directos y registra la app en “Aplicaciones instaladas”. Ante un error restaura la versión anterior.
 
-El repositorio no contiene binarios, drivers, certificados ni secretos de release. Sin esos insumos `build-windows.ps1` no genera el ZIP.
+Para probar exclusivamente en la misma PC sin esperar Partner Center existe `-DriverSigningMode Test`, usando el certificado creado por `native\scripts\new-development-certificate.ps1` y Windows Test Mode. El valor predeterminado `Microsoft` sigue siendo el único build de producción y exige el catálogo oficial.
+
+El repositorio no contiene binarios, certificados ni secretos de release. Conserva source, INF y scripts reproducibles; los outputs de `native/bin`, `native/build`, CAB y `dist` permanecen ignorados.

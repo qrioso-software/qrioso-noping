@@ -10,7 +10,9 @@ param(
     [string]$TlsSpkiPin,
     [Parameter(Mandatory = $true)]
     [string]$SigningCertificateThumbprint,
-    [string]$NativeArtifactsPath = (Join-Path $PSScriptRoot "apps\windows\native\bin\x64"),
+    [ValidateSet("Microsoft", "Test")]
+    [string]$DriverSigningMode = "Microsoft",
+    [string]$NativeArtifactsPath,
     [string]$TimestampServer = "http://timestamp.digicert.com"
 )
 
@@ -55,15 +57,30 @@ function Assert-ValidSignature {
     }
 }
 
+function Assert-MicrosoftDriverCatalog {
+    param([string]$Path)
+    $signature = Get-AuthenticodeSignature -LiteralPath $Path
+    if ($signature.Status -ne [System.Management.Automation.SignatureStatus]::Valid -or
+        $signature.SignerCertificate.Subject -notmatch "Microsoft Windows Hardware Compatibility Publisher") {
+        throw "El catálogo WFP no está firmado por Microsoft Hardware Dev Center: $Path"
+    }
+}
+
 function Invoke-QriosoSign {
     param(
         [string]$Path,
         [string]$SignTool,
         [string]$Thumbprint,
         [System.Security.Cryptography.X509Certificates.X509Certificate2]$Certificate,
-        [string]$TimestampUrl
+        [string]$TimestampUrl,
+        [switch]$PreserveExistingValidSignature
     )
-    if ((Get-AuthenticodeSignature -LiteralPath $Path).Status -eq [System.Management.Automation.SignatureStatus]::Valid) { return }
+    $existingSignature = Get-AuthenticodeSignature -LiteralPath $Path
+    if ($existingSignature.Status -eq [System.Management.Automation.SignatureStatus]::Valid -and
+        ($PreserveExistingValidSignature -or
+         $existingSignature.SignerCertificate.Thumbprint.ToUpperInvariant() -eq $Certificate.Thumbprint.ToUpperInvariant())) {
+        return
+    }
     if ([IO.Path]::GetExtension($Path) -in ".ps1", ".psd1") {
         $signature = Set-AuthenticodeSignature -LiteralPath $Path -Certificate $Certificate -TimestampServer $TimestampUrl -HashAlgorithm SHA256
         if ($signature.Status -ne [System.Management.Automation.SignatureStatus]::Valid) { throw "Falló la firma Authenticode de $Path ($($signature.StatusMessage))" }
@@ -93,27 +110,82 @@ if ($TlsSpkiPin -notmatch "^sha256/[A-Za-z0-9+/]{43}=$") { throw "TlsSpkiPin deb
 $root = $PSScriptRoot
 Set-Location $root
 $windowsRoot = Join-Path $root "apps\windows"
+if ([string]::IsNullOrWhiteSpace($NativeArtifactsPath)) {
+    $nativeFolder = if ($DriverSigningMode -eq "Test") { "test-x64" } else { "x64" }
+    $NativeArtifactsPath = Join-Path $windowsRoot "native\bin\$nativeFolder"
+}
 $nativeRoot = [IO.Path]::GetFullPath($NativeArtifactsPath)
 $driverRoot = Join-Path $nativeRoot "driver"
+$wireGuardPreparation = Join-Path $windowsRoot "native\scripts\acquire-wireguard.ps1"
+$nativeBuild = Join-Path $windowsRoot "native\scripts\build-native.ps1"
+$testDriverPreparation = Join-Path $windowsRoot "native\scripts\prepare-test-driver.ps1"
+if (-not (Test-Path -LiteralPath (Join-Path $nativeRoot "wireguard.dll")) -or
+    -not (Test-Path -LiteralPath (Join-Path $nativeRoot "tunnel.dll")) -or
+    -not (Test-Path -LiteralPath (Join-Path $nativeRoot "wireguard-provenance.json"))) {
+    Write-Host "Preparando automáticamente WireGuardNT y tunnel.dll desde fuentes oficiales fijadas..."
+    & $wireGuardPreparation -Architecture $Architecture -OutputPath $nativeRoot
+}
+if ($DriverSigningMode -eq "Test" -or
+    -not (Test-Path -LiteralPath (Join-Path $nativeRoot "QriosoNoPing.Wfp.dll")) -or
+    -not (Test-Path -LiteralPath (Join-Path $driverRoot "QriosoNoPing.Wfp.sys")) -or
+    -not (Test-Path -LiteralPath (Join-Path $driverRoot "QriosoNoPing.Wfp.inf")) -or
+    -not (Test-Path -LiteralPath (Join-Path $driverRoot "QriosoNoPing.Wfp.cat"))) {
+    Write-Host "Compilando automáticamente el componente nativo WFP..."
+    & $nativeBuild -Architecture $Architecture -Configuration $Configuration -OutputPath $nativeRoot
+}
 $nativeFiles = @(
     (Join-Path $nativeRoot "tunnel.dll"), (Join-Path $nativeRoot "wireguard.dll"),
+    (Join-Path $nativeRoot "wireguard-provenance.json"),
+    (Join-Path $nativeRoot "licenses\WireGuardNT-LICENSE.txt"),
+    (Join-Path $nativeRoot "licenses\WireGuard-Windows-COPYING.txt"),
     (Join-Path $nativeRoot "QriosoNoPing.Wfp.dll"), (Join-Path $driverRoot "QriosoNoPing.Wfp.sys"),
     (Join-Path $driverRoot "QriosoNoPing.Wfp.inf"), (Join-Path $driverRoot "QriosoNoPing.Wfp.cat")
 )
 foreach ($requiredPath in $nativeFiles) {
     if (-not (Test-Path -LiteralPath $requiredPath -PathType Leaf)) { throw "Falta el artefacto nativo obligatorio: $requiredPath" }
 }
+$certificate = Get-CodeSigningCertificate $SigningCertificateThumbprint
+$thumbprint = $certificate.Thumbprint.ToUpperInvariant()
+if ($DriverSigningMode -eq "Microsoft" -and
+    ($certificate.Subject -match "Development" -or $certificate.Subject -eq $certificate.Issuer)) {
+    throw "El build Microsoft exige un certificado Authenticode público de Qrioso; el certificado local Development solo sirve con -DriverSigningMode Test."
+}
+$signTool = Get-SignTool
+if ($DriverSigningMode -eq "Test") {
+    & $testDriverPreparation -SigningCertificateThumbprint $thumbprint -DriverPath $driverRoot -TimestampServer $TimestampServer
+}
+Invoke-QriosoSign -Path (Join-Path $nativeRoot "tunnel.dll") -SignTool $signTool -Thumbprint $thumbprint -Certificate $certificate -TimestampUrl $TimestampServer
+Invoke-QriosoSign -Path (Join-Path $nativeRoot "QriosoNoPing.Wfp.dll") -SignTool $signTool -Thumbprint $thumbprint -Certificate $certificate -TimestampUrl $TimestampServer
 Assert-ValidSignature (Join-Path $nativeRoot "tunnel.dll")
-Assert-ValidSignature (Join-Path $nativeRoot "wireguard.dll")
-Assert-ValidSignature (Join-Path $driverRoot "QriosoNoPing.Wfp.cat")
+$provenancePath = Join-Path $nativeRoot "wireguard-provenance.json"
+$provenance = Get-Content -LiteralPath $provenancePath -Raw | ConvertFrom-Json
+if (-not $provenance.PSObject.Properties["tunnelDllSourceBuildSha256"]) {
+    $provenance | Add-Member -NotePropertyName tunnelDllSourceBuildSha256 -NotePropertyValue $provenance.tunnelDllSha256
+}
+$provenance.tunnelDllSha256 = (Get-FileHash -LiteralPath (Join-Path $nativeRoot "tunnel.dll") -Algorithm SHA256).Hash
+$provenance | Add-Member -NotePropertyName qriosoSigningCertificateThumbprint -NotePropertyValue $thumbprint -Force
+$provenance | Add-Member -NotePropertyName packagedAtUtc -NotePropertyValue ([DateTimeOffset]::UtcNow.ToString("O")) -Force
+[IO.File]::WriteAllText($provenancePath, ($provenance | ConvertTo-Json), [Text.UTF8Encoding]::new($false))
+$wireGuardSignature = Get-AuthenticodeSignature -LiteralPath (Join-Path $nativeRoot "wireguard.dll")
+if ($wireGuardSignature.Status -ne [System.Management.Automation.SignatureStatus]::Valid -or
+    $wireGuardSignature.SignerCertificate.Subject -notmatch "WireGuard") {
+    throw "wireguard.dll no conserva la firma oficial de WireGuard."
+}
+if ($DriverSigningMode -eq "Microsoft") {
+    Assert-MicrosoftDriverCatalog (Join-Path $driverRoot "QriosoNoPing.Wfp.cat")
+}
+else {
+    $testCatalogSignature = Get-AuthenticodeSignature -LiteralPath (Join-Path $driverRoot "QriosoNoPing.Wfp.cat")
+    if ($testCatalogSignature.Status -ne [System.Management.Automation.SignatureStatus]::Valid -or
+        $testCatalogSignature.SignerCertificate.Thumbprint.ToUpperInvariant() -ne $thumbprint) {
+        throw "El catálogo de prueba no está firmado por el certificado Development seleccionado."
+    }
+}
 $catalog = Test-FileCatalog -Path $driverRoot -CatalogFilePath (Join-Path $driverRoot "QriosoNoPing.Wfp.cat") -Detailed
 if ($catalog.Status -ne [System.Management.Automation.SignatureStatus]::Valid) {
     throw "El catálogo del driver WFP no coincide con el paquete o no tiene una firma válida."
 }
 
-$certificate = Get-CodeSigningCertificate $SigningCertificateThumbprint
-$thumbprint = $certificate.Thumbprint.ToUpperInvariant()
-$signTool = Get-SignTool
 $outputRoot = Join-Path $root "dist\windows"
 $packageRoot = Join-Path $outputRoot "QriosoNoPing-win-$Architecture"
 $appOutput = Join-Path $packageRoot "app"
@@ -136,8 +208,12 @@ Write-Host "3/6 Compilando el Windows Service autocontenido..."
 if ($LASTEXITCODE -ne 0) { throw "Falló la compilación del Windows Service." }
 
 New-Item -ItemType Directory -Path (Join-Path $serviceNativeOutput "driver") -Force | Out-Null
+New-Item -ItemType Directory -Path (Join-Path $serviceNativeOutput "licenses") -Force | Out-Null
 Copy-Item -LiteralPath (Join-Path $nativeRoot "tunnel.dll") -Destination $serviceNativeOutput
 Copy-Item -LiteralPath (Join-Path $nativeRoot "wireguard.dll") -Destination $serviceNativeOutput
+Copy-Item -LiteralPath (Join-Path $nativeRoot "wireguard-provenance.json") -Destination $serviceNativeOutput
+Copy-Item -LiteralPath (Join-Path $nativeRoot "licenses\WireGuardNT-LICENSE.txt") -Destination (Join-Path $serviceNativeOutput "licenses")
+Copy-Item -LiteralPath (Join-Path $nativeRoot "licenses\WireGuard-Windows-COPYING.txt") -Destination (Join-Path $serviceNativeOutput "licenses")
 Copy-Item -LiteralPath (Join-Path $nativeRoot "QriosoNoPing.Wfp.dll") -Destination $serviceNativeOutput
 Copy-Item -LiteralPath (Join-Path $driverRoot "QriosoNoPing.Wfp.sys") -Destination (Join-Path $serviceNativeOutput "driver")
 Copy-Item -LiteralPath (Join-Path $driverRoot "QriosoNoPing.Wfp.inf") -Destination (Join-Path $serviceNativeOutput "driver")
@@ -145,6 +221,7 @@ Copy-Item -LiteralPath (Join-Path $driverRoot "QriosoNoPing.Wfp.cat") -Destinati
 Copy-Item (Join-Path $windowsRoot "packaging\install.ps1") $packageRoot
 Copy-Item (Join-Path $windowsRoot "packaging\uninstall.ps1") $packageRoot
 Copy-Item (Join-Path $windowsRoot "packaging\LEEME.txt") $packageRoot
+[IO.File]::WriteAllText((Join-Path $packageRoot "driver-signing-mode.txt"), $DriverSigningMode, [Text.UTF8Encoding]::new($false))
 $installerPath = Join-Path $packageRoot "install.ps1"
 $installer = [IO.File]::ReadAllText($installerPath)
 $installer = $installer.Replace("__ACCESS_API_BASE_URI__", $accessUri.AbsoluteUri.TrimEnd('/'))
@@ -165,12 +242,14 @@ $signTargets = @(
     Get-Item -LiteralPath (Join-Path $packageRoot "uninstall.ps1")
 )
 foreach ($target in $signTargets) {
-    Invoke-QriosoSign -Path $target.FullName -SignTool $signTool -Thumbprint $thumbprint -Certificate $certificate -TimestampUrl $TimestampServer
+    Invoke-QriosoSign -Path $target.FullName -SignTool $signTool -Thumbprint $thumbprint -Certificate $certificate -TimestampUrl $TimestampServer -PreserveExistingValidSignature
     Assert-ValidSignature $target.FullName
 }
 $qriosoSignedTargets = @(
     (Join-Path $appOutput "Qrioso NoPing.exe"),
     (Join-Path $serviceOutput "Qrioso NoPing Service.exe"),
+    (Join-Path $serviceNativeOutput "tunnel.dll"),
+    (Join-Path $serviceNativeOutput "QriosoNoPing.Wfp.dll"),
     (Join-Path $packageRoot "install.ps1"),
     (Join-Path $packageRoot "uninstall.ps1")
 )
@@ -198,7 +277,13 @@ Write-Host "6/6 Creando ZIP de distribución..."
 Compress-Archive -Path (Join-Path $packageRoot "*") -DestinationPath $archive -CompressionLevel Optimal
 $archiveHash = (Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash
 Write-Host ""
-Write-Host "Build de producción terminado correctamente." -ForegroundColor Green
+if ($DriverSigningMode -eq "Microsoft") {
+    Write-Host "Build de producción firmado por Microsoft terminado correctamente." -ForegroundColor Green
+}
+else {
+    Write-Host "Build piloto TEST-SIGNED terminado correctamente; úsalo solo en esta PC." -ForegroundColor Yellow
+    Write-Warning "Antes de instalar: habilita Test Mode con bcdedit /set testsigning on y reinicia. Secure Boot puede impedir Test Mode."
+}
 Write-Host "Aplicación: $(Join-Path $appOutput 'Qrioso NoPing.exe')"
 Write-Host "Paquete: $archive"
 Write-Host "SHA-256: $archiveHash"

@@ -7,7 +7,9 @@ Un release solo recibe estado **GO** cuando todos los gates siguientes tienen ev
 - **PASS local:** 23/23 pruebas .NET, Windows Service `win-x64` sin warnings, pruebas Go normales y con detector de carreras, `go vet`, `govulncheck`, build ARM64, ShellCheck, parseo PowerShell, manifiesto/staging anti-tampering, `npm audit`, CDK synth/diff, validación CloudFormation y `cfn-lint`.
 - **PATCHED:** la revisión de seguridad previa al parche encontró dos riesgos medios y dos bajos. Se cerraron el bypass entre interfaces WireGuard, el TOCTOU del instalador, la suplantación del servidor named-pipe y el agotamiento por mensajes/conexiones locales. Las pruebas de integración Windows de estos controles siguen perteneciendo al gate nativo.
 - **HARDENED:** el rate limiter elimina clientes expirados antes de aplicar su tope global y `/uninstall-wfp` funciona aunque la configuración local esté ausente o dañada.
-- **BLOCKED externo:** faltan el binario WFP x64, su catálogo firmado por Microsoft, las DLL oficiales de WireGuard, el certificado Authenticode de Qrioso y la ejecución de `build-windows.ps1` en Windows.
+- **IMPLEMENTED / pendiente de compilar en Windows:** ya existen el source real de `QriosoNoPing.Wfp.dll/.sys/.inf`, adquisición reproducible de WireGuardNT y build oficial fijado de `tunnel.dll`.
+- **PILOTO disponible / pendiente de ejecutar:** en una sola PC puede usarse el certificado local `Development`, Windows Test Mode y `build-windows.ps1 -DriverSigningMode Test`; todavía hay que compilar, reiniciar e instalar en Windows.
+- **BLOCKED externo para release pública:** faltan el catálogo devuelto por Microsoft Partner Center, el certificado Authenticode público de Qrioso y las pruebas Windows finales.
 - **NO DEPLOY:** la cuenta, perfil, región, AMI y diff fueron verificados en modo lectura. AWS permanece sin recursos `ridenow-noping-*` porque no existe autorización explícita de despliegue.
 - **NO-GO beta todavía:** faltan la aceptación en Windows/Easy Anti-Cheat, revocación y carga sobre AWS, y las partidas A/B exigidas por el criterio de éxito.
 
@@ -27,8 +29,9 @@ make infra-diff
 
 ## 2. Gate nativo Windows
 
-- `tunnel.dll` y `wireguard.dll` oficiales con Authenticode válido;
-- WFP x64 compilado con WDK contra `apps/windows/native/include/qrioso_wfp.h`;
+- `wireguard.dll` oficial con Authenticode válido y hash/procedencia fijados;
+- `tunnel.dll` compilado automáticamente desde el commit oficial fijado y firmado por Qrioso;
+- WFP x64 compilado con WDK desde `apps/windows/native/src/`;
 - Driver Verifier sin errores durante captura, cambio de red, suspensión, crash y desinstalación;
 - catálogo WFP firmado por Microsoft; Secure Boot y Memory Integrity permanecen habilitados;
 - certificado Code Signing de Qrioso vigente por más de 30 días y timestamp RFC 3161 disponible;

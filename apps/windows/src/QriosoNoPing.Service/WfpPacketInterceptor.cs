@@ -51,7 +51,11 @@ public sealed class WfpPacketInterceptor : IPacketInterceptor
     {
         string nativeRoot = Path.GetFullPath(configuration.NativeDirectory).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
         string libraryPath = Path.GetFullPath(Path.Combine(configuration.NativeDirectory, "QriosoNoPing.Wfp.dll"));
-        if (!libraryPath.StartsWith(nativeRoot, StringComparison.OrdinalIgnoreCase) || !File.Exists(libraryPath) || !File.Exists(Path.Combine(configuration.NativeDirectory, "QriosoNoPing.Wfp.sys")))
+        string driverPath = Path.GetFullPath(Path.Combine(configuration.NativeDirectory, "driver", "QriosoNoPing.Wfp.sys"));
+        if (!libraryPath.StartsWith(nativeRoot, StringComparison.OrdinalIgnoreCase) ||
+            !driverPath.StartsWith(nativeRoot, StringComparison.OrdinalIgnoreCase) ||
+            !File.Exists(libraryPath) ||
+            !File.Exists(driverPath))
         {
             throw new FileNotFoundException("The signed Qrioso WFP component is incomplete.", libraryPath);
         }

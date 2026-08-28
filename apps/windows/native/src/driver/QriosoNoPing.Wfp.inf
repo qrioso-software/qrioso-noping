@@ -1,0 +1,45 @@
+; Qrioso NoPing Windows Filtering Platform callout driver
+
+[Version]
+Signature   = "$Windows NT$"
+Class       = WFPCALLOUTS
+ClassGuid   = {57465043-616C-6C6F-7574-5F636C617373}
+Provider    = %Qrioso%
+CatalogFile = QriosoNoPing.Wfp.cat
+DriverVer   = 08/28/2026,0.1.0.0
+PnpLockdown = 1
+
+[SourceDisksNames]
+1 = %InstallDisk%,,,""
+
+[SourceDisksFiles]
+QriosoNoPing.Wfp.sys = 1,,
+
+[DestinationDirs]
+QriosoNoPing.DriverFiles = 12
+
+[DefaultInstall.NTamd64]
+OptionDesc = %ServiceDescription%
+CopyFiles  = QriosoNoPing.DriverFiles
+
+[DefaultInstall.NTamd64.Services]
+AddService = QriosoNoPingWfp,,QriosoNoPing.Service
+
+[QriosoNoPing.DriverFiles]
+QriosoNoPing.Wfp.sys,,,0x00000040
+
+[QriosoNoPing.Service]
+DisplayName   = %ServiceDisplayName%
+Description   = %ServiceDescription%
+ServiceType   = 1
+StartType     = 3
+ErrorControl  = 1
+ServiceBinary = %12%\QriosoNoPing.Wfp.sys
+Dependencies  = BFE
+
+[Strings]
+Qrioso             = "Qrioso Software Consulting"
+InstallDisk         = "Qrioso NoPing installation media"
+ServiceDisplayName  = "Qrioso NoPing WFP Driver"
+ServiceDescription  = "Signed WFP packet selector for Qrioso NoPing"
+

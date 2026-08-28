@@ -63,7 +63,6 @@ public sealed class MultipathClientEngine : IAsyncDisposable
         cancellation.Cancel();
         routeA.Dispose();
         routeB.Dispose();
-        interceptor.Dispose();
         try
         {
             await completion;
@@ -77,6 +76,7 @@ public sealed class MultipathClientEngine : IAsyncDisposable
         }
         finally
         {
+            interceptor.Dispose();
             cancellation.Dispose();
         }
     }

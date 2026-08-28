@@ -347,7 +347,8 @@ CDK, Go y las pruebas .NET compartidas corren en Docker sobre macOS. No hay comp
 - Implementado: dos WireGuard del relay, TUN, `nftables` SNAT, framing bidireccional, probes, MTU, modos A/B/A+B y deduplicación acotada first-arrival-wins.
 - Implementado: UI WinUI brandada, protocolo local, DPAPI con ACL, Windows Service, WireGuard embebible, motor multipath administrado y fallback directo.
 - Implementado: instalador transaccional, manifiesto firmado, validación de catálogo y gate de release que impide paquetes incompletos o sin firma.
-- Bloqueo externo de release: compilar el componente WFP x64 contra el ABI documentado, obtener firma Microsoft del driver y firma Authenticode de Qrioso; luego ejecutar pruebas reales en Windows/Easy Anti-Cheat, carga y partidas A/B. Esos binarios y certificados no se guardan en Git.
+- Implementado en source: componente WFP x64 real (DLL/driver/INF), adquisición automática de `wireguard.dll`, build oficial fijado de `tunnel.dll` y flujos separados de firma Microsoft y prueba local.
+- Bloqueo externo de release pública: compilar en Windows, obtener la firma Microsoft del catálogo y la firma Authenticode pública de Qrioso; luego ejecutar Driver Verifier, Secure Boot/HVCI, Easy Anti-Cheat, carga y partidas A/B. Para una prueba del propietario en una sola PC existe un modo `Test` explícito y no distribuible. Binarios y certificados no se guardan en Git.
 
 ## 13. Fuentes
 

@@ -2,7 +2,7 @@
 
 MVP personal para optimizar y medir la ruta de Fortnite NA-East mediante dos túneles cifrados y duplicación/deduplicación real de paquetes. El producto se llama **Qrioso NoPing**; todos los recursos de AWS usan el prefijo configurable `ridenow-`.
 
-> Estado real: el relay TUN/NAT, control de peers, revocación, multipath bidireccional, modos A/B/A+B, DPAPI, servicio Windows, UI y gates del release están implementados. El repositorio no incluye binarios ni certificados: para emitir un ZIP distribuible todavía se requiere el componente WFP compilado y firmado por Microsoft, las DLL oficiales de WireGuard, un certificado de firma de Qrioso y validación final en una PC Windows con Easy Anti-Cheat. `build-windows.ps1` falla si falta cualquiera de esos requisitos.
+> Estado real: el relay TUN/NAT, control de peers, revocación, multipath bidireccional, modos A/B/A+B, DPAPI, servicio Windows, UI y el source real WFP están implementados. `build-windows.ps1` descarga/compila automáticamente las DLL oficiales de WireGuard y el componente WFP. Una release distribuible todavía requiere catálogo Microsoft, certificado público de Qrioso y validación Windows/Easy Anti-Cheat; el propietario puede usar el modo `Test` no distribuible en una sola PC.
 
 ## Arquitectura
 
@@ -192,11 +192,13 @@ sudo RIDENOW_TOKEN='qnp_cliente-001_...' ridenow-token add --id cliente-001
 No existe compilación remota ni workflow de GitHub. Copia o clona el repositorio en una PC Windows 11 x64 que tenga:
 
 - Visual Studio con desarrollo de escritorio .NET;
+- Desktop C++ x64 y WDK;
 - WinUI/Windows App SDK;
 - Windows 11 SDK;
-- .NET SDK 10.
+- .NET SDK 10;
+- Git for Windows y acceso de red para la primera preparación.
 
-El directorio `apps\windows\native\bin\x64` debe contener las DLL oficiales firmadas de WireGuard y el paquete WFP firmado descrito en `apps\windows\native\README.md`. Desde PowerShell, en la raíz del repositorio:
+`build-windows.ps1` descarga `wireguard.dll`, compila `tunnel.dll` y compila el WFP automáticamente. En producción se reemplaza el catálogo generado por el devuelto por Microsoft, según `apps\windows\native\README.md`. Desde PowerShell, en la raíz del repositorio:
 
 ```powershell
 Set-ExecutionPolicy -Scope Process Bypass
@@ -205,6 +207,8 @@ Set-ExecutionPolicy -Scope Process Bypass
   -TlsSpkiPin "sha256/<PIN-IMPRESO-POR-INFRA-UP>" `
   -SigningCertificateThumbprint "<THUMBPRINT-CODE-SIGNING-QRIOSO>"
 ```
+
+Para el piloto exclusivo del propietario puede usarse `-DriverSigningMode Test` con Windows Test Mode y el certificado `Development`; ese ZIP no se distribuye.
 
 El script ejecuta las pruebas y produce:
 
