@@ -1,0 +1,319 @@
+<Window
+    x:Class="QriosoNoPing.App.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="Qrioso NoPing">
+    <Grid Background="{StaticResource AppBackgroundBrush}" RequestedTheme="Dark">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="52" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Grid x:Name="AppTitleBar" Padding="16,0,146,0" Background="{StaticResource AppBackgroundBrush}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <Border
+                Width="30"
+                Height="30"
+                Padding="5"
+                VerticalAlignment="Center"
+                Background="White"
+                CornerRadius="8">
+                <Image Source="Assets/QriosoMark.png" Stretch="Uniform" />
+            </Border>
+
+            <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center" Orientation="Horizontal" Spacing="7">
+                <TextBlock FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}" Text="Qrioso" />
+                <TextBlock FontSize="14" Foreground="{StaticResource TextSecondaryBrush}" Text="NoPing" />
+            </StackPanel>
+
+            <Border
+                Grid.Column="2"
+                Padding="10,5"
+                VerticalAlignment="Center"
+                Background="#121D3E"
+                BorderBrush="{StaticResource AppBorderBrush}"
+                BorderThickness="1"
+                CornerRadius="12">
+                <StackPanel Orientation="Horizontal" Spacing="7">
+                    <Ellipse Width="7" Height="7" VerticalAlignment="Center" Fill="{StaticResource BrandAccentBrush}" />
+                    <TextBlock FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Text="VISTA PREVIA PRIVADA" />
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="238" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <Border
+                Padding="20,28"
+                Background="#0C1028"
+                BorderBrush="{StaticResource AppBorderBrush}"
+                BorderThickness="0,1,1,0">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <StackPanel Spacing="18">
+                        <StackPanel Spacing="5">
+                            <TextBlock Style="{StaticResource EyebrowTextStyle}" Text="FORTNITE" />
+                            <TextBlock FontSize="22" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}" Text="NA-East" />
+                            <TextBlock Style="{StaticResource SecondaryTextStyle}" Text="Virginia · us-east-1" />
+                        </StackPanel>
+
+                        <Border Height="1" Background="{StaticResource AppBorderBrush}" />
+
+                        <StackPanel Spacing="12">
+                            <TextBlock FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" Text="PROTECCIÓN DE RUTA" />
+                            <Grid ColumnSpacing="10">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Border Width="28" Height="28" Background="{StaticResource BrandAccentSoftBrush}" CornerRadius="8">
+                                    <FontIcon FontSize="13" Foreground="{StaticResource BrandAccentBrush}" Glyph="&#xE968;" />
+                                </Border>
+                                <StackPanel Grid.Column="1" Spacing="2">
+                                    <TextBlock FontSize="13" FontWeight="SemiBold" Text="Dos rutas" />
+                                    <TextBlock FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Text="Directa + acelerada" />
+                                </StackPanel>
+                            </Grid>
+                            <Grid ColumnSpacing="10">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Border Width="28" Height="28" Background="{StaticResource BrandAccentSoftBrush}" CornerRadius="8">
+                                    <FontIcon FontSize="13" Foreground="{StaticResource BrandAccentBrush}" Glyph="&#xE72E;" />
+                                </Border>
+                                <StackPanel Grid.Column="1" Spacing="2">
+                                    <TextBlock FontSize="13" FontWeight="SemiBold" Text="Cifrado" />
+                                    <TextBlock FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Text="WireGuard integrado" />
+                                </StackPanel>
+                            </Grid>
+                            <Grid ColumnSpacing="10">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Border Width="28" Height="28" Background="{StaticResource BrandAccentSoftBrush}" CornerRadius="8">
+                                    <FontIcon FontSize="13" Foreground="{StaticResource BrandAccentBrush}" Glyph="&#xE9D9;" />
+                                </Border>
+                                <StackPanel Grid.Column="1" Spacing="2">
+                                    <TextBlock FontSize="13" FontWeight="SemiBold" Text="Medición real" />
+                                    <TextBlock FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Text="Ping, jitter y pérdida" />
+                                </StackPanel>
+                            </Grid>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <Border
+                        Grid.Row="2"
+                        Padding="14"
+                        Background="#111733"
+                        BorderBrush="{StaticResource AppBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="12">
+                        <StackPanel Spacing="5">
+                            <TextBlock FontSize="12" FontWeight="SemiBold" Text="Qrioso Software Consulting" TextWrapping="Wrap" />
+                            <TextBlock FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Text="Ingeniería medible. Sin promesas falsas de latencia." TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </Border>
+
+            <ScrollViewer Grid.Column="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                <StackPanel Padding="34,28,34,34" Spacing="18">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Spacing="5">
+                            <TextBlock Style="{StaticResource EyebrowTextStyle}" Text="PANEL DE RUTA" />
+                            <TextBlock FontSize="30" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}" Text="Optimización de conexión" />
+                            <TextBlock Style="{StaticResource SecondaryTextStyle}" Text="Compara ambas rutas y usa la que entregue mejor estabilidad para tu sesión." />
+                        </StackPanel>
+                        <Border
+                            Grid.Column="1"
+                            Padding="12,8"
+                            VerticalAlignment="Top"
+                            Background="#111733"
+                            BorderBrush="{StaticResource AppBorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="12">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Ellipse x:Name="HeaderStatusDot" Width="8" Height="8" VerticalAlignment="Center" Fill="#7B839F" />
+                                <TextBlock x:Name="HeaderStatusText" FontSize="12" FontWeight="SemiBold" Text="SIN CONFIGURAR" />
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+
+                    <Border BorderBrush="#285A6C" BorderThickness="1" CornerRadius="18" Padding="24">
+                        <Border.Background>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                <GradientStop Color="#182044" Offset="0" />
+                                <GradientStop Color="#103746" Offset="1" />
+                            </LinearGradientBrush>
+                        </Border.Background>
+                        <Grid ColumnSpacing="20">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Border Width="58" Height="58" Background="#26375D" CornerRadius="16">
+                                <FontIcon FontSize="25" Foreground="{StaticResource BrandAccentBrush}" Glyph="&#xE83D;" />
+                            </Border>
+                            <StackPanel Grid.Column="1" Spacing="5" VerticalAlignment="Center">
+                                <TextBlock x:Name="ConfigurationLabel" FontSize="19" FontWeight="SemiBold" Text="Prepara tu acceso privado" />
+                                <TextBlock
+                                    x:Name="ConfigurationDescription"
+                                    Foreground="#C7CEE5"
+                                    Text="Registra la llave entregada por Qrioso. Las métricas se activarán cuando el motor de red esté disponible."
+                                    TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <Grid ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <Border Style="{StaticResource DashboardCardStyle}">
+                            <StackPanel Spacing="7">
+                                <TextBlock Style="{StaticResource SecondaryTextStyle}" Text="PING" />
+                                <TextBlock FontSize="26" FontWeight="SemiBold" Text="— ms" />
+                                <TextBlock FontSize="11" Foreground="#7F89A9" Text="Sin medición" />
+                            </StackPanel>
+                        </Border>
+                        <Border Grid.Column="1" Style="{StaticResource DashboardCardStyle}">
+                            <StackPanel Spacing="7">
+                                <TextBlock Style="{StaticResource SecondaryTextStyle}" Text="JITTER" />
+                                <TextBlock FontSize="26" FontWeight="SemiBold" Text="— ms" />
+                                <TextBlock FontSize="11" Foreground="#7F89A9" Text="Sin medición" />
+                            </StackPanel>
+                        </Border>
+                        <Border Grid.Column="2" Style="{StaticResource DashboardCardStyle}">
+                            <StackPanel Spacing="7">
+                                <TextBlock Style="{StaticResource SecondaryTextStyle}" Text="PÉRDIDA" />
+                                <TextBlock FontSize="26" FontWeight="SemiBold" Text="— %" />
+                                <TextBlock FontSize="11" Foreground="#7F89A9" Text="Sin medición" />
+                            </StackPanel>
+                        </Border>
+                        <Border Grid.Column="3" Style="{StaticResource DashboardCardStyle}">
+                            <StackPanel Spacing="7">
+                                <TextBlock Style="{StaticResource SecondaryTextStyle}" Text="RUTA GANADORA" />
+                                <TextBlock FontSize="26" FontWeight="SemiBold" Text="—" />
+                                <TextBlock FontSize="11" Foreground="#7F89A9" Text="Pendiente" />
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+
+                    <Grid ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Border Style="{StaticResource DashboardCardStyle}">
+                            <Grid ColumnSpacing="14">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <Border Width="42" Height="42" Background="#182D4A" CornerRadius="12">
+                                    <FontIcon FontSize="18" Foreground="#79A8FF" Glyph="&#xE968;" />
+                                </Border>
+                                <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
+                                    <TextBlock FontSize="14" FontWeight="SemiBold" Text="Ruta A · Directa" />
+                                    <TextBlock FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Text="Internet → AWS Virginia" />
+                                </StackPanel>
+                                <Border Grid.Column="2" Padding="9,5" VerticalAlignment="Center" Background="#1C213D" CornerRadius="10">
+                                    <TextBlock FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Text="PENDIENTE" />
+                                </Border>
+                            </Grid>
+                        </Border>
+                        <Border Grid.Column="1" Style="{StaticResource DashboardCardStyle}">
+                            <Grid ColumnSpacing="14">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <Border Width="42" Height="42" Background="{StaticResource BrandAccentSoftBrush}" CornerRadius="12">
+                                    <FontIcon FontSize="18" Foreground="{StaticResource BrandAccentBrush}" Glyph="&#xE774;" />
+                                </Border>
+                                <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
+                                    <TextBlock FontSize="14" FontWeight="SemiBold" Text="Ruta B · Acelerada" />
+                                    <TextBlock FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Text="Global Accelerator → AWS" />
+                                </StackPanel>
+                                <Border Grid.Column="2" Padding="9,5" VerticalAlignment="Center" Background="#1C213D" CornerRadius="10">
+                                    <TextBlock FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Text="PENDIENTE" />
+                                </Border>
+                            </Grid>
+                        </Border>
+                    </Grid>
+
+                    <Border Style="{StaticResource DashboardCardStyle}" Padding="24">
+                        <Grid ColumnSpacing="28">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="0.82*" />
+                                <ColumnDefinition Width="1.18*" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Spacing="7">
+                                <TextBlock Style="{StaticResource EyebrowTextStyle}" Text="ACCESO" />
+                                <TextBlock FontSize="20" FontWeight="SemiBold" Text="Registra tu llave" />
+                                <TextBlock
+                                    Style="{StaticResource SecondaryTextStyle}"
+                                    Text="La llave la entrega el propietario de Qrioso NoPing. Nunca se muestra completa en pantalla después de validarla." />
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="1" Spacing="12">
+                                <PasswordBox
+                                    x:Name="AccessTokenInput"
+                                    AutomationProperties.Name="Llave de acceso de Qrioso NoPing"
+                                    Header="Llave de acceso"
+                                    PasswordRevealMode="Peek"
+                                    PlaceholderText="qnp_cliente-001_..." />
+
+                                <Button
+                                    Click="RegisterToken_Click"
+                                    Content="Registrar llave"
+                                    HorizontalAlignment="Left"
+                                    Style="{StaticResource BrandPrimaryButtonStyle}" />
+
+                                <InfoBar
+                                    x:Name="StatusBar"
+                                    IsOpen="True"
+                                    IsClosable="False"
+                                    Severity="Informational"
+                                    Title="Sin configurar"
+                                    Message="Registra una llave para preparar esta PC." />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <TextBlock
+                        HorizontalAlignment="Center"
+                        FontSize="11"
+                        Foreground="#747E9F"
+                        Text="Qrioso NoPing evalúa cada ruta; la mejora depende de la red y nunca se promete una reducción fija de latencia." />
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+    </Grid>
+</Window>

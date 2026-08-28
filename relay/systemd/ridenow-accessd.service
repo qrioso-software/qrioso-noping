@@ -1,0 +1,24 @@
+[Unit]
+Description=RideNow NoPing access authorization service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ridenow
+Group=ridenow
+Environment=RIDENOW_ACCESS_FILE=/etc/ridenow-noping/access-keys.yaml
+Environment=RIDENOW_ACCESS_LISTEN=:8443
+Environment=RIDENOW_HEALTH_LISTEN=127.0.0.1:8081
+EnvironmentFile=-/etc/ridenow-noping/accessd.env
+ExecStart=/usr/local/bin/ridenow-accessd
+Restart=on-failure
+RestartSec=2
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadOnlyPaths=/etc/ridenow-noping
+
+[Install]
+WantedBy=multi-user.target

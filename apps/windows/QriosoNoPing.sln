@@ -1,0 +1,36 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QriosoNoPing.Core", "src\QriosoNoPing.Core\QriosoNoPing.Core.csproj", "{8EEBAA83-E6B1-495D-9D9E-4DF64C521711}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QriosoNoPing.App", "src\QriosoNoPing.App\QriosoNoPing.App.csproj", "{88D2B6CC-6558-4D81-AE0C-26D815D8C87B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QriosoNoPing.Service", "src\QriosoNoPing.Service\QriosoNoPing.Service.csproj", "{BB714FB7-2FA8-46A2-99D1-17C18738F075}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QriosoNoPing.Core.Tests", "tests\QriosoNoPing.Core.Tests\QriosoNoPing.Core.Tests.csproj", "{FC85D4DE-0BFE-4FF4-A932-DBB7C27FCBF5}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{8EEBAA83-E6B1-495D-9D9E-4DF64C521711}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{8EEBAA83-E6B1-495D-9D9E-4DF64C521711}.Debug|x64.Build.0 = Debug|Any CPU
+		{8EEBAA83-E6B1-495D-9D9E-4DF64C521711}.Release|x64.ActiveCfg = Release|Any CPU
+		{8EEBAA83-E6B1-495D-9D9E-4DF64C521711}.Release|x64.Build.0 = Release|Any CPU
+		{88D2B6CC-6558-4D81-AE0C-26D815D8C87B}.Debug|x64.ActiveCfg = Debug|x64
+		{88D2B6CC-6558-4D81-AE0C-26D815D8C87B}.Debug|x64.Build.0 = Debug|x64
+		{88D2B6CC-6558-4D81-AE0C-26D815D8C87B}.Release|x64.ActiveCfg = Release|x64
+		{88D2B6CC-6558-4D81-AE0C-26D815D8C87B}.Release|x64.Build.0 = Release|x64
+		{BB714FB7-2FA8-46A2-99D1-17C18738F075}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{BB714FB7-2FA8-46A2-99D1-17C18738F075}.Debug|x64.Build.0 = Debug|Any CPU
+		{BB714FB7-2FA8-46A2-99D1-17C18738F075}.Release|x64.ActiveCfg = Release|Any CPU
+		{BB714FB7-2FA8-46A2-99D1-17C18738F075}.Release|x64.Build.0 = Release|Any CPU
+		{FC85D4DE-0BFE-4FF4-A932-DBB7C27FCBF5}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{FC85D4DE-0BFE-4FF4-A932-DBB7C27FCBF5}.Debug|x64.Build.0 = Debug|Any CPU
+		{FC85D4DE-0BFE-4FF4-A932-DBB7C27FCBF5}.Release|x64.ActiveCfg = Release|Any CPU
+		{FC85D4DE-0BFE-4FF4-A932-DBB7C27FCBF5}.Release|x64.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

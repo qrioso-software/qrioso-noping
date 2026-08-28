@@ -1,0 +1,72 @@
+# macOS / Windows
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# IDEs and local editor state
+.vs/
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.swp
+*.tmp
+*.temp
+*.bak
+
+# Local environment and credentials
+**/.env
+**/.env.*
+!**/.env.example
+!**/.env.*.example
+**/.envrc
+.direnv/
+**/access-keys.yaml
+!**/access-keys.example.yaml
+**/accessd.env
+*.key
+*.pfx
+*.p12
+*.snk
+
+# Generated distributions and installers
+/dist/
+*.appx
+*.appxbundle
+*.msi
+*.msix
+*.msixbundle
+*.nupkg
+*.snupkg
+
+# .NET / WinUI build and test output
+/apps/windows/**/[Bb]in/
+/apps/windows/**/[Oo]bj/
+**/TestResults/
+*.trx
+*.coverage
+*.coveragexml
+coverage*.json
+coverage*.xml
+
+# AWS CDK / Node.js output
+/infra/node_modules/
+/infra/cdk.out/
+/infra/.cdk.staging/
+*.tsbuildinfo
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Go build and profiling output
+/relay/ridenow-accessd
+/relay/ridenow-relay
+/relay/ridenow-token
+/relay/*.test
+/relay/coverage.out
+*.prof
+
+# General runtime output
+*.log

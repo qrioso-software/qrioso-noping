@@ -1,0 +1,17 @@
+[Unit]
+Description=RideNow NoPing multipath relay
+After=network-online.target ridenow-accessd.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+ExecStart=/usr/local/bin/ridenow-relay
+Restart=on-failure
+RestartSec=2
+NoNewPrivileges=true
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target
+

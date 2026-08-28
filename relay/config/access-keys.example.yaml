@@ -1,0 +1,8 @@
+version: 1
+keys:
+  cliente-001:
+    tokenHash: "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+    enabled: false
+    maxDevices: 1
+    note: "Ejemplo deshabilitado; crear una llave real con ridenow-token"
+
