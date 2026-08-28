@@ -26,9 +26,15 @@ Desktop.ini
 !**/access-keys.example.yaml
 **/accessd.env
 *.key
+*.pem
+*.cer
+*.crt
+*.csr
 *.pfx
 *.p12
 *.snk
+*.jks
+**/secrets/
 
 # Generated distributions and installers
 /dist/
@@ -43,6 +49,10 @@ Desktop.ini
 # .NET / WinUI build and test output
 /apps/windows/**/[Bb]in/
 /apps/windows/**/[Oo]bj/
+/apps/windows/native/bin/
+/apps/windows/native/build/
+/apps/windows/native/**/[Dd]ebug/
+/apps/windows/native/**/[Rr]elease/
 **/TestResults/
 *.trx
 *.coverage

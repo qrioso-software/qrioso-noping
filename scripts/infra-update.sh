@@ -13,5 +13,7 @@ fi
 
 verify_aws_identity
 require_docker
-"${SCRIPT_DIR}/cdk.sh" deploy "${CORE_STACK_NAME}" --exclusively --require-approval never
+require_budget_email
+CONFIRM_CDK_ACTION="deploy:${CORE_STACK_NAME}" \
+  "${SCRIPT_DIR}/cdk.sh" deploy "${CORE_STACK_NAME}" --exclusively --require-approval never
 "${SCRIPT_DIR}/infra-up.sh"

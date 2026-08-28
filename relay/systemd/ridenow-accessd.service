@@ -1,7 +1,8 @@
 [Unit]
-Description=RideNow NoPing access authorization service
-After=network-online.target
+Description=Qrioso NoPing access authorization service
+After=network-online.target wg-quick@wg-direct.service wg-quick@wg-accelerated.service
 Wants=network-online.target
+Requires=wg-quick@wg-direct.service wg-quick@wg-accelerated.service
 
 [Service]
 Type=simple
@@ -10,6 +11,7 @@ Group=ridenow
 Environment=RIDENOW_ACCESS_FILE=/etc/ridenow-noping/access-keys.yaml
 Environment=RIDENOW_ACCESS_LISTEN=:8443
 Environment=RIDENOW_HEALTH_LISTEN=127.0.0.1:8081
+Environment=RIDENOW_SESSION_FILE=/run/ridenow-noping/sessions.json
 EnvironmentFile=-/etc/ridenow-noping/accessd.env
 ExecStart=/usr/local/bin/ridenow-accessd
 Restart=on-failure
@@ -19,6 +21,11 @@ PrivateTmp=true
 ProtectHome=true
 ProtectSystem=strict
 ReadOnlyPaths=/etc/ridenow-noping
+ReadWritePaths=/run/ridenow-noping
+RuntimeDirectory=ridenow-noping
+RuntimeDirectoryMode=0750
+AmbientCapabilities=CAP_NET_ADMIN
+CapabilityBoundingSet=CAP_NET_ADMIN
 
 [Install]
 WantedBy=multi-user.target

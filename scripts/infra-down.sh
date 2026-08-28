@@ -49,7 +49,8 @@ fi
 
 if stack_exists "${EDGE_STACK_NAME}"; then
   echo "Eliminando ${EDGE_STACK_NAME} para detener el cobro fijo de Global Accelerator..."
-  "${SCRIPT_DIR}/cdk.sh" destroy "${EDGE_STACK_NAME}" --exclusively --force
+  CONFIRM_CDK_ACTION="destroy:${EDGE_STACK_NAME}" \
+    "${SCRIPT_DIR}/cdk.sh" destroy "${EDGE_STACK_NAME}" --exclusively --force
 else
   echo "El edge ${EDGE_STACK_NAME} ya está eliminado."
 fi

@@ -1,9 +1,12 @@
-//go:build windows
+//go:build !linux
 
 package access
 
-import "os"
+import (
+	"errors"
+	"os"
+)
 
 func preserveOwnership(_ *os.File, _, _ string) error {
-	return nil
+	return errors.New("access file writes are supported only on the Linux relay")
 }

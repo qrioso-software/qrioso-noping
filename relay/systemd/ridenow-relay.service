@@ -1,17 +1,29 @@
 [Unit]
-Description=RideNow NoPing multipath relay
-After=network-online.target ridenow-accessd.service
+Description=Qrioso NoPing multipath relay
+After=network-online.target wg-quick@wg-direct.service wg-quick@wg-accelerated.service ridenow-accessd.service
 Wants=network-online.target
+Requires=wg-quick@wg-direct.service wg-quick@wg-accelerated.service ridenow-accessd.service
 
 [Service]
 Type=simple
 User=root
+Environment=RIDENOW_GA_HEALTH_LISTEN=0.0.0.0:8080
+Environment=RIDENOW_RELAY_HEALTH_LISTEN=127.0.0.1:8082
+Environment=RIDENOW_SESSION_FILE=/run/ridenow-noping/sessions.json
+Environment=RIDENOW_ROUTE_A_LISTEN=10.78.0.1:51900
+Environment=RIDENOW_ROUTE_B_LISTEN=10.79.0.1:51900
+Environment=RIDENOW_TUN_NAME=ridenow0
+ExecStartPre=/usr/local/libexec/ridenow-relay-network.sh up
 ExecStart=/usr/local/bin/ridenow-relay
+ExecStopPost=/usr/local/libexec/ridenow-relay-network.sh down
 Restart=on-failure
 RestartSec=2
 NoNewPrivileges=true
 ProtectHome=true
+ProtectSystem=strict
+ReadOnlyPaths=/run/ridenow-noping
+AmbientCapabilities=CAP_NET_ADMIN CAP_NET_RAW
+CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_RAW
 
 [Install]
 WantedBy=multi-user.target
-

@@ -14,9 +14,13 @@ const app = new cdk.App();
 const prefix = requiredName(process.env.PROJECT_PREFIX ?? "ridenow", "PROJECT_PREFIX");
 const stage = requiredName(process.env.STAGE ?? "dev", "STAGE");
 const region = process.env.CDK_DEFAULT_REGION ?? process.env.AWS_REGION ?? "us-east-1";
+const budgetEmail = process.env.BUDGET_EMAIL ?? "";
 
 if (region !== "us-east-1") {
   throw new Error(`El MVP solo admite AWS_REGION=us-east-1; recibido: ${region}`);
+}
+if (prefix !== "ridenow") {
+  throw new Error(`Este entorno exige PROJECT_PREFIX=ridenow; recibido: ${prefix}`);
 }
 
 const commonEnvironment = {
@@ -25,6 +29,7 @@ const commonEnvironment = {
 };
 const core = new RidenowNoPingCoreStack(app, `${prefix}-noping-${stage}-core`, {
   synthesizer: new cdk.BootstraplessSynthesizer(),
+  terminationProtection: true,
   env: commonEnvironment,
   prefix,
   stage,
@@ -32,9 +37,9 @@ const core = new RidenowNoPingCoreStack(app, `${prefix}-noping-${stage}-core`, {
   amiId: process.env.RELAY_AMI_ID ?? "ami-068e33c5263812a9b",
   maxClients: Number.parseInt(process.env.MAX_CLIENTS ?? "10", 10),
   monthlyBudgetUsd: Number.parseFloat(process.env.MONTHLY_BUDGET_USD ?? "60"),
-  budgetEmail: process.env.BUDGET_EMAIL,
+  budgetEmail,
   awsProfile: process.env.AWS_PROFILE ?? "ridenow-main",
-  description: "RideNow NoPing persistent core: EC2, EIP, VPC, SSM, alarms and budget",
+  description: "Qrioso NoPing persistent core: EC2, EIP, VPC, SSM, alarms and budget",
 });
 
 const edge = new RidenowNoPingEdgeStack(app, `${prefix}-noping-${stage}-edge`, {
@@ -42,5 +47,5 @@ const edge = new RidenowNoPingEdgeStack(app, `${prefix}-noping-${stage}-edge`, {
   env: commonEnvironment,
   prefix,
   stage,
-  description: "RideNow NoPing ephemeral edge: Global Accelerator",
+  description: "Qrioso NoPing ephemeral edge: Global Accelerator",
 });

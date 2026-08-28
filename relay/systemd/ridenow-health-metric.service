@@ -1,0 +1,18 @@
+[Unit]
+Description=Publish Qrioso NoPing relay health to CloudWatch
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=ridenow
+Group=ridenow
+EnvironmentFile=-/etc/ridenow-noping/metrics.env
+ExecStart=/usr/local/libexec/ridenow-health-metric.sh
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/ridenow-noping/metrics
+AmbientCapabilities=CAP_NET_ADMIN
+CapabilityBoundingSet=CAP_NET_ADMIN

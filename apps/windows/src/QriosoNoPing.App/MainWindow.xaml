@@ -41,7 +41,7 @@
                 CornerRadius="12">
                 <StackPanel Orientation="Horizontal" Spacing="7">
                     <Ellipse Width="7" Height="7" VerticalAlignment="Center" Fill="{StaticResource BrandAccentBrush}" />
-                    <TextBlock FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Text="VISTA PREVIA PRIVADA" />
+                    <TextBlock FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Text="QRIOSO NOPING" />
                 </StackPanel>
             </Border>
         </Grid>
@@ -84,8 +84,8 @@
                                     <FontIcon FontSize="13" Foreground="{StaticResource BrandAccentBrush}" Glyph="&#xE968;" />
                                 </Border>
                                 <StackPanel Grid.Column="1" Spacing="2">
-                                    <TextBlock FontSize="13" FontWeight="SemiBold" Text="Dos rutas" />
-                                    <TextBlock FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Text="Directa + acelerada" />
+                                    <TextBlock FontSize="13" FontWeight="SemiBold" Text="Dos rutas de transporte" />
+                                    <TextBlock x:Name="MultipathFeatureStatus" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Text="Servicio desconectado" />
                                 </StackPanel>
                             </Grid>
                             <Grid ColumnSpacing="10">
@@ -97,8 +97,8 @@
                                     <FontIcon FontSize="13" Foreground="{StaticResource BrandAccentBrush}" Glyph="&#xE72E;" />
                                 </Border>
                                 <StackPanel Grid.Column="1" Spacing="2">
-                                    <TextBlock FontSize="13" FontWeight="SemiBold" Text="Cifrado" />
-                                    <TextBlock FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Text="WireGuard integrado" />
+                                    <TextBlock FontSize="13" FontWeight="SemiBold" Text="WireGuard embebido" />
+                                    <TextBlock x:Name="EncryptionFeatureStatus" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Text="Administrado por Qrioso" />
                                 </StackPanel>
                             </Grid>
                             <Grid ColumnSpacing="10">
@@ -110,8 +110,8 @@
                                     <FontIcon FontSize="13" Foreground="{StaticResource BrandAccentBrush}" Glyph="&#xE9D9;" />
                                 </Border>
                                 <StackPanel Grid.Column="1" Spacing="2">
-                                    <TextBlock FontSize="13" FontWeight="SemiBold" Text="Medición real" />
-                                    <TextBlock FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Text="Ping, jitter y pérdida" />
+                                    <TextBlock FontSize="13" FontWeight="SemiBold" Text="Medición por ruta" />
+                                    <TextBlock x:Name="MetricsFeatureStatus" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Text="Se activa al conectar" />
                                 </StackPanel>
                             </Grid>
                         </StackPanel>
@@ -179,7 +179,7 @@
                                 <TextBlock
                                     x:Name="ConfigurationDescription"
                                     Foreground="#C7CEE5"
-                                    Text="Registra la llave entregada por Qrioso. Las métricas se activarán cuando el motor de red esté disponible."
+                                    Text="Registra la llave entregada por Qrioso y conecta cuando quieras comparar las dos rutas."
                                     TextWrapping="Wrap" />
                             </StackPanel>
                         </Grid>
@@ -196,29 +196,29 @@
                         <Border Style="{StaticResource DashboardCardStyle}">
                             <StackPanel Spacing="7">
                                 <TextBlock Style="{StaticResource SecondaryTextStyle}" Text="PING" />
-                                <TextBlock FontSize="26" FontWeight="SemiBold" Text="— ms" />
-                                <TextBlock FontSize="11" Foreground="#7F89A9" Text="Sin medición" />
+                                <TextBlock x:Name="PingMetricText" FontSize="26" FontWeight="SemiBold" Text="— ms" />
+                                <TextBlock x:Name="PingMetricDetail" FontSize="11" Foreground="#7F89A9" Text="Mediana de la ruta ganadora" />
                             </StackPanel>
                         </Border>
                         <Border Grid.Column="1" Style="{StaticResource DashboardCardStyle}">
                             <StackPanel Spacing="7">
                                 <TextBlock Style="{StaticResource SecondaryTextStyle}" Text="JITTER" />
-                                <TextBlock FontSize="26" FontWeight="SemiBold" Text="— ms" />
-                                <TextBlock FontSize="11" Foreground="#7F89A9" Text="Sin medición" />
+                                <TextBlock x:Name="JitterMetricText" FontSize="26" FontWeight="SemiBold" Text="— ms" />
+                                <TextBlock FontSize="11" Foreground="#7F89A9" Text="Variación entre muestras" />
                             </StackPanel>
                         </Border>
                         <Border Grid.Column="2" Style="{StaticResource DashboardCardStyle}">
                             <StackPanel Spacing="7">
                                 <TextBlock Style="{StaticResource SecondaryTextStyle}" Text="PÉRDIDA" />
-                                <TextBlock FontSize="26" FontWeight="SemiBold" Text="— %" />
-                                <TextBlock FontSize="11" Foreground="#7F89A9" Text="Sin medición" />
+                                <TextBlock x:Name="LossMetricText" FontSize="26" FontWeight="SemiBold" Text="— %" />
+                                <TextBlock FontSize="11" Foreground="#7F89A9" Text="Probes sin respuesta" />
                             </StackPanel>
                         </Border>
                         <Border Grid.Column="3" Style="{StaticResource DashboardCardStyle}">
                             <StackPanel Spacing="7">
                                 <TextBlock Style="{StaticResource SecondaryTextStyle}" Text="RUTA GANADORA" />
-                                <TextBlock FontSize="26" FontWeight="SemiBold" Text="—" />
-                                <TextBlock FontSize="11" Foreground="#7F89A9" Text="Pendiente" />
+                                <TextBlock x:Name="WinningRouteText" FontSize="26" FontWeight="SemiBold" Text="—" />
+                                <TextBlock FontSize="11" Foreground="#7F89A9" Text="First-arrival-wins" />
                             </StackPanel>
                         </Border>
                     </Grid>
@@ -243,7 +243,7 @@
                                     <TextBlock FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Text="Internet → AWS Virginia" />
                                 </StackPanel>
                                 <Border Grid.Column="2" Padding="9,5" VerticalAlignment="Center" Background="#1C213D" CornerRadius="10">
-                                    <TextBlock FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Text="PENDIENTE" />
+                                    <TextBlock x:Name="RouteAStatusText" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Text="DESCONECTADA" />
                                 </Border>
                             </Grid>
                         </Border>
@@ -262,7 +262,7 @@
                                     <TextBlock FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Text="Global Accelerator → AWS" />
                                 </StackPanel>
                                 <Border Grid.Column="2" Padding="9,5" VerticalAlignment="Center" Background="#1C213D" CornerRadius="10">
-                                    <TextBlock FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Text="PENDIENTE" />
+                                    <TextBlock x:Name="RouteBStatusText" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Text="DESCONECTADA" />
                                 </Border>
                             </Grid>
                         </Border>
@@ -276,10 +276,10 @@
                             </Grid.ColumnDefinitions>
                             <StackPanel Spacing="7">
                                 <TextBlock Style="{StaticResource EyebrowTextStyle}" Text="ACCESO" />
-                                <TextBlock FontSize="20" FontWeight="SemiBold" Text="Registra tu llave" />
+                                <TextBlock FontSize="20" FontWeight="SemiBold" Text="Registra tu llave de acceso" />
                                 <TextBlock
                                     Style="{StaticResource SecondaryTextStyle}"
-                                    Text="La llave la entrega el propietario de Qrioso NoPing. Nunca se muestra completa en pantalla después de validarla." />
+                                    Text="El servicio valida la llave por TLS fijado y la protege con DPAPI. Nunca se muestra completa en logs ni estados." />
                             </StackPanel>
 
                             <StackPanel Grid.Column="1" Spacing="12">
@@ -290,11 +290,24 @@
                                     PasswordRevealMode="Peek"
                                     PlaceholderText="qnp_cliente-001_..." />
 
-                                <Button
-                                    Click="RegisterToken_Click"
-                                    Content="Registrar llave"
-                                    HorizontalAlignment="Left"
-                                    Style="{StaticResource BrandPrimaryButtonStyle}" />
+                                <ComboBox
+                                    x:Name="ModeSelector"
+                                    Header="Modo de ruta"
+                                    SelectedIndex="2">
+                                    <ComboBoxItem Content="Solo Ruta A · Directa" Tag="route-a" />
+                                    <ComboBoxItem Content="Solo Ruta B · Acelerada" Tag="route-b" />
+                                    <ComboBoxItem Content="Multipath A+B · Recomendado" Tag="duplicate" />
+                                </ComboBox>
+
+                                <StackPanel Orientation="Horizontal" Spacing="10">
+                                    <Button
+                                        x:Name="RegisterButton"
+                                        Click="RegisterToken_Click"
+                                        Content="Registrar llave"
+                                        Style="{StaticResource BrandPrimaryButtonStyle}" />
+                                    <Button x:Name="ConnectButton" Click="Connect_Click" Content="Conectar" IsEnabled="False" />
+                                    <Button x:Name="DisconnectButton" Click="Disconnect_Click" Content="Desconectar" IsEnabled="False" />
+                                </StackPanel>
 
                                 <InfoBar
                                     x:Name="StatusBar"
@@ -302,7 +315,7 @@
                                     IsClosable="False"
                                     Severity="Informational"
                                     Title="Sin configurar"
-                                    Message="Registra una llave para preparar esta PC." />
+                                    Message="El servicio de Qrioso está consultando su estado." />
                             </StackPanel>
                         </Grid>
                     </Border>

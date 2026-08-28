@@ -2,7 +2,7 @@
 
 MVP personal para optimizar y medir la ruta de Fortnite NA-East mediante dos túneles cifrados y duplicación/deduplicación real de paquetes. El producto se llama **Qrioso NoPing**; todos los recursos de AWS usan el prefijo configurable `ridenow-`.
 
-> Estado real: están implementados CDK, ciclo de encendido/apagado, CLI de llaves, autorización HTTPS básica, deduplicador, UI WinUI, Windows Service y empaquetado local para Windows. Todavía faltan el data plane TUN/WireGuard/WFP, DPAPI, revocación activa de peers y el instalador firmado; el build Windows actual es de desarrollo, no un NoPing funcional.
+> Estado real: el relay TUN/NAT, control de peers, revocación, multipath bidireccional, modos A/B/A+B, DPAPI, servicio Windows, UI y gates del release están implementados. El repositorio no incluye binarios ni certificados: para emitir un ZIP distribuible todavía se requiere el componente WFP compilado y firmado por Microsoft, las DLL oficiales de WireGuard, un certificado de firma de Qrioso y validación final en una PC Windows con Easy Anti-Cheat. `build-windows.ps1` falla si falta cualquiera de esos requisitos.
 
 ## Arquitectura
 
@@ -67,26 +67,31 @@ INSTANCE_TYPE=t4g.small
 RELAY_AMI_ID=ami-068e33c5263812a9b
 MAX_CLIENTS=10
 MONTHLY_BUDGET_USD=60
+BUDGET_EMAIL=alertas@tu-dominio.com
 ```
 
-Los scripts abortan si la cuenta autenticada no coincide con `AWS_ACCOUNT_ID`. `PROJECT_PREFIX` debe usar minúsculas, números o guiones y tener entre 2 y 20 caracteres. Para este entorno se mantiene `ridenow`.
+`BUDGET_EMAIL` es obligatorio y debe ser un buzón real: recibe los umbrales del presupuesto y la solicitud de confirmación de SNS para alarmas de CPU/estado. Los scripts abortan si prefijo, perfil, cuenta o región no son exactamente `ridenow`, `ridenow-main`, `009160027850` y `us-east-1`.
 
 ## Ciclo diario de la infraestructura
 
 ### Encender o crear todo
 
 ```bash
-make infra-up
+CONFIRM_DEPLOY=ridenow-noping-dev-core make infra-up
 ```
+
+La confirmación exacta solo se exige al crear el core por primera vez. Cuando el core ya existe, el encendido diario continúa siendo `make infra-up`.
 
 Este único comando:
 
 1. verifica que `ridenow-main` corresponda a la cuenta `009160027850`;
-2. crea `ridenow-noping-dev-core` si todavía no existe;
-3. enciende la EC2 si estaba detenida;
-4. espera que la instancia y sus status checks estén correctos;
-5. crea o actualiza `ridenow-noping-dev-edge` con Global Accelerator;
-6. imprime los endpoints de las rutas A y B.
+2. sintetiza y muestra el diff inmediatamente antes de cada deploy;
+3. crea `ridenow-noping-dev-core` si todavía no existe y activa termination protection;
+4. enciende la EC2 si estaba detenida;
+5. espera que la instancia y sus status checks estén correctos;
+6. crea o actualiza `ridenow-noping-dev-edge` con Global Accelerator;
+7. compila el relay ARM64 en Docker, lo instala por SSM desde un artefacto S3 privado y efímero, configura los endpoints vigentes, verifica ambos servicios e imprime el pin SPKI público del certificado TLS;
+8. imprime los endpoints de las rutas A y B.
 
 En el primer uso equivale al despliegue inicial. En usos posteriores no modifica el core: únicamente recupera la EC2 y recrea edge. Esto evita que un encendido diario reemplace accidentalmente la instancia que contiene las llaves.
 
@@ -141,9 +146,9 @@ make infra-synth
 make infra-diff
 ```
 
-La infraestructura usa dos stacks y no requiere `CDKToolkit` porque actualmente no publica assets CDK:
+La infraestructura usa dos stacks y no requiere `CDKToolkit`: el instalador del relay usa un bucket privado del core y elimina el objeto transitorio al terminar.
 
-- `ridenow-noping-dev-core`: VPC pública sin NAT Gateway, `t4g.small` ARM64, EBS gp3 cifrado, EIP, SSM, IAM, alarmas y budget;
+- `ridenow-noping-dev-core`: VPC pública sin NAT Gateway, `t4g.small` ARM64, EBS gp3 cifrado, EIP, SSM, bucket temporal de releases, SNS, alarmas y budget;
 - `ridenow-noping-dev-edge`: Global Accelerator, listener UDP 51821 y endpoint hacia la EC2.
 
 El Security Group abre UDP 51820, UDP 51821, HTTPS 8443 y health check HTTP 8080. No existe SSH público. Tampoco se crean Cognito, Lambda, API Gateway, DynamoDB ni SQS.
@@ -174,7 +179,7 @@ sudo ridenow-token validate
 sudo ridenow-token revoke cliente-001
 ```
 
-La llave completa se muestra una vez. `/etc/ridenow-noping/access-keys.yaml` guarda solamente su hash SHA-256, estado, límite de dispositivos y nota. La actualización del archivo es atómica.
+La llave completa se muestra una vez. `/etc/ridenow-noping/access-keys.yaml` guarda solamente su hash SHA-256, estado, límite de dispositivos y nota. La actualización preserva `root:ridenow 0640`, usa reemplazo atómico y serializa la transacción completa para que altas y revocaciones concurrentes no se pisen.
 
 Para registrar una llave creada manualmente sin mostrarla en los argumentos del proceso:
 
@@ -191,11 +196,14 @@ No existe compilación remota ni workflow de GitHub. Copia o clona el repositori
 - Windows 11 SDK;
 - .NET SDK 10.
 
-Desde PowerShell, en la raíz del repositorio:
+El directorio `apps\windows\native\bin\x64` debe contener las DLL oficiales firmadas de WireGuard y el paquete WFP firmado descrito en `apps\windows\native\README.md`. Desde PowerShell, en la raíz del repositorio:
 
 ```powershell
 Set-ExecutionPolicy -Scope Process Bypass
-.\build-windows.ps1
+.\build-windows.ps1 `
+  -AccessApiBaseUri "https://<ELASTIC-IP>:8443" `
+  -TlsSpkiPin "sha256/<PIN-IMPRESO-POR-INFRA-UP>" `
+  -SigningCertificateThumbprint "<THUMBPRINT-CODE-SIGNING-QRIOSO>"
 ```
 
 El script ejecuta las pruebas y produce:
@@ -205,7 +213,7 @@ dist\windows\QriosoNoPing-win-x64\app\Qrioso NoPing.exe
 dist\windows\QriosoNoPing-win-x64.zip
 ```
 
-El ZIP incluye la aplicación, el Windows Service, `install.ps1` y `uninstall.ps1`. Para este build de desarrollo, descomprime el ZIP y ejecuta `install.ps1` como Administrador. El paquete todavía no contiene WireGuard/WFP.
+El ZIP incluye la aplicación, el Windows Service, WireGuard embebido, WFP, instalador y desinstalador. Todos los ejecutables se verifican, el manifiesto SHA-256 está firmado y la instalación hace staging y rollback completo si falla el driver o el servicio. Descomprime el ZIP y ejecuta `install.ps1` como Administrador.
 
 Desde macOS solo se valida la lógica compartida:
 
@@ -213,11 +221,14 @@ Desde macOS solo se valida la lógica compartida:
 make windows-check
 ```
 
-## Flujo recomendado antes de jugar
+## Flujo operativo de desarrollo
 
 ```bash
 aws sso login --profile ridenow-main
 make infra-status
+# Solo la primera vez:
+CONFIRM_DEPLOY=ridenow-noping-dev-core make infra-up
+# Encendidos posteriores:
 make infra-up
 ```
 
@@ -234,14 +245,14 @@ make infra-status
 make aws-verify      Verifica perfil, cuenta, región y recursos existentes
 make infra-synth     Genera ambos templates CloudFormation
 make infra-diff      Compara ambos stacks con AWS sin crear change set
-make infra-up        Crea/actualiza core, enciende EC2 y crea Global Accelerator
+make infra-up        Crea core la primera vez, enciende EC2, crea edge e instala servicios
 make infra-down      Apaga EC2 y elimina Global Accelerator conservando las llaves
 make infra-status    Muestra el estado real de core, EC2 y edge
 make infra-update    Actualiza core; exige CONFIRM_UPDATE exacto
 make infra-destroy   Elimina todo; exige CONFIRM_DESTROY exacto
 make relay-test      Ejecuta las pruebas Go dentro de Docker
 make relay-build     Produce binarios Linux ARM64
-make windows-check   Prueba el núcleo .NET dentro de Docker
+make windows-check   Prueba .NET, compila el Windows Service y valida el staging del instalador en Docker
 ```
 
 ## Límites del MVP
@@ -249,7 +260,7 @@ make windows-check   Prueba el núcleo .NET dentro de Docker
 - Límite inicial: 10 PC simultáneas.
 - La duplicación usa aproximadamente el doble del tráfico tunelizado.
 - Con un solo ISP, las rutas comparten la última milla.
-- AWS no garantiza reducir ping; se compararán directo, ruta A, ruta B y A+B.
+- AWS no garantiza reducir ping; la app permite comparar directo, ruta A, ruta B y A+B.
 - No se inyectará código en Fortnite ni se interferirá con Easy Anti-Cheat.
 
 ## Documentación
@@ -257,6 +268,8 @@ make windows-check   Prueba el núcleo .NET dentro de Docker
 - [Objetivo permanente](AGENTS.md)
 - [Plan del MVP](PLAN.md)
 - [Arquitectura detallada](docs/architecture.md)
+- [Runbook de release](docs/release-runbook.md)
+- [Modelo de seguridad](docs/security-model.md)
 
 ## Fuentes técnicas
 

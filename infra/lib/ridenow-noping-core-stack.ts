@@ -2,6 +2,7 @@ import {
   Aws,
   CfnOutput,
   Duration,
+  RemovalPolicy,
   Stack,
   StackProps,
   Tags,
@@ -10,6 +11,10 @@ import {
   aws_cloudwatch as cloudwatch,
   aws_ec2 as ec2,
   aws_iam as iam,
+  aws_s3 as s3,
+  aws_sns as sns,
+  aws_sns_subscriptions as subscriptions,
+  aws_cloudwatch_actions as cloudwatchActions,
 } from "aws-cdk-lib";
 import { Construct } from "constructs";
 
@@ -20,7 +25,7 @@ export interface RidenowNoPingCoreStackProps extends StackProps {
   readonly amiId: string;
   readonly maxClients: number;
   readonly monthlyBudgetUsd: number;
-  readonly budgetEmail?: string;
+  readonly budgetEmail: string;
   readonly awsProfile: string;
 }
 
@@ -30,11 +35,14 @@ export class RidenowNoPingCoreStack extends Stack {
   constructor(scope: Construct, id: string, props: RidenowNoPingCoreStackProps) {
     super(scope, id, props);
 
-    if (!Number.isInteger(props.maxClients) || props.maxClients < 1 || props.maxClients > 50) {
-      throw new Error("MAX_CLIENTS debe ser un entero entre 1 y 50 para el MVP.");
+    if (!Number.isInteger(props.maxClients) || props.maxClients < 1 || props.maxClients > 10) {
+      throw new Error("MAX_CLIENTS debe ser un entero entre 1 y 10 para el MVP inicial.");
     }
     if (!Number.isFinite(props.monthlyBudgetUsd) || props.monthlyBudgetUsd <= 0) {
       throw new Error("MONTHLY_BUDGET_USD debe ser mayor que cero.");
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(props.budgetEmail)) {
+      throw new Error("BUDGET_EMAIL es obligatorio y debe ser un correo válido para alertas de costo y salud.");
     }
 
     const baseName = `${props.prefix}-noping-${props.stage}`;
@@ -62,7 +70,7 @@ export class RidenowNoPingCoreStack extends Stack {
     const securityGroup = new ec2.SecurityGroup(this, "RelaySecurityGroup", {
       vpc,
       securityGroupName: `${baseName}-relay-sg`,
-      description: "RideNow NoPing relay data plane and access API",
+      description: "Qrioso NoPing relay data plane and access API",
       allowAllOutbound: true,
     });
     securityGroup.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.udp(51820), "WireGuard direct path");
@@ -87,15 +95,27 @@ export class RidenowNoPingCoreStack extends Stack {
       },
     }));
 
+    const artifactsBucket = new s3.Bucket(this, "RelayArtifactsBucket", {
+      bucketName: `${baseName}-artifacts-${Aws.ACCOUNT_ID}-${Aws.REGION}`,
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+      encryption: s3.BucketEncryption.S3_MANAGED,
+      enforceSSL: true,
+      objectOwnership: s3.ObjectOwnership.BUCKET_OWNER_ENFORCED,
+      lifecycleRules: [{ expiration: Duration.days(1) }],
+      removalPolicy: RemovalPolicy.DESTROY,
+    });
+    artifactsBucket.grantRead(role, "relay/*");
+
     const userData = ec2.UserData.forLinux();
     userData.addCommands(
       "set -euxo pipefail",
-      "dnf install -y wireguard-tools nftables jq python3",
+      "dnf install -y wireguard-tools nftables iproute ethtool jq python3 curl openssl",
       `getent group ${props.prefix} >/dev/null || groupadd --system ${props.prefix}`,
       `id ${props.prefix} >/dev/null 2>&1 || useradd --system --gid ${props.prefix} --home-dir /var/lib/${props.prefix}-noping --create-home --shell /sbin/nologin ${props.prefix}`,
-      `install -d -m 0750 -o root -g ${props.prefix} /etc/${props.prefix}-noping`,
+      `install -d -m 02750 -o root -g ${props.prefix} /etc/${props.prefix}-noping`,
       `install -d -m 0750 -o ${props.prefix} -g ${props.prefix} /var/lib/${props.prefix}-noping`,
       `install -d -m 0750 -o ${props.prefix} -g ${props.prefix} /var/lib/${props.prefix}-noping/health`,
+      `install -d -m 0750 -o ${props.prefix} -g ${props.prefix} /var/lib/${props.prefix}-noping/metrics`,
       `printf 'ok\\n' > /var/lib/${props.prefix}-noping/health/healthz`,
       `chown ${props.prefix}:${props.prefix} /var/lib/${props.prefix}-noping/health/healthz`,
       `if [ ! -f /etc/${props.prefix}-noping/access-keys.yaml ]; then printf 'version: 1\\nkeys: {}\\n' > /etc/${props.prefix}-noping/access-keys.yaml; fi`,
@@ -110,7 +130,7 @@ export class RidenowNoPingCoreStack extends Stack {
       "systemctl enable --now nftables",
       "cat >/etc/systemd/system/ridenow-health.service <<'EOF'",
       "[Unit]",
-      "Description=RideNow Global Accelerator health responder",
+      "Description=Qrioso NoPing Global Accelerator health responder",
       "After=network-online.target",
       "Wants=network-online.target",
       "",
@@ -171,13 +191,18 @@ export class RidenowNoPingCoreStack extends Stack {
       domain: "vpc",
       tags: [{ key: "Name", value: `${baseName}-eip` }],
     });
-    const eipAssociation = new ec2.CfnEIPAssociation(this, "RelayElasticIpAssociation", {
+    new ec2.CfnEIPAssociation(this, "RelayElasticIpAssociation", {
       allocationId: elasticIp.attrAllocationId,
       instanceId: this.relayInstance.instanceId,
     });
-    eipAssociation.node.addDependency(this.relayInstance);
 
-    new cloudwatch.Alarm(this, "RelayCpuAlarm", {
+    const alertTopic = new sns.Topic(this, "InfrastructureAlerts", {
+      topicName: `${baseName}-alerts`,
+      displayName: "Qrioso NoPing infrastructure alerts",
+    });
+    alertTopic.addSubscription(new subscriptions.EmailSubscription(props.budgetEmail));
+
+    const cpuAlarm = new cloudwatch.Alarm(this, "RelayCpuAlarm", {
       alarmName: `${baseName}-cpu-high`,
       alarmDescription: "Relay CPU over 70% for 15 minutes",
       metric: new cloudwatch.Metric({
@@ -193,8 +218,9 @@ export class RidenowNoPingCoreStack extends Stack {
       comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
       treatMissingData: cloudwatch.TreatMissingData.MISSING,
     });
+    cpuAlarm.addAlarmAction(new cloudwatchActions.SnsAction(alertTopic));
 
-    new cloudwatch.Alarm(this, "RelayStatusAlarm", {
+    const statusAlarm = new cloudwatch.Alarm(this, "RelayStatusAlarm", {
       alarmName: `${baseName}-status-check-failed`,
       alarmDescription: "EC2 system or instance status check failed",
       metric: new cloudwatch.Metric({
@@ -210,10 +236,44 @@ export class RidenowNoPingCoreStack extends Stack {
       comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
       treatMissingData: cloudwatch.TreatMissingData.MISSING,
     });
+    statusAlarm.addAlarmAction(new cloudwatchActions.SnsAction(alertTopic));
 
-    const subscribers = props.budgetEmail
-      ? [{ address: props.budgetEmail, subscriptionType: "EMAIL" }]
-      : undefined;
+    const serviceHealthAlarm = new cloudwatch.Alarm(this, "RelayServiceHealthAlarm", {
+      alarmName: `${baseName}-service-unhealthy`,
+      alarmDescription: "Access and multipath relay health checks failed",
+      metric: new cloudwatch.Metric({
+        namespace: `${props.prefix}/NoPing`,
+        metricName: "ServiceHealthy",
+        dimensionsMap: { Stage: props.stage },
+        period: Duration.minutes(1),
+        statistic: "Minimum",
+      }),
+      threshold: 1,
+      evaluationPeriods: 2,
+      datapointsToAlarm: 2,
+      comparisonOperator: cloudwatch.ComparisonOperator.LESS_THAN_THRESHOLD,
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+    });
+    serviceHealthAlarm.addAlarmAction(new cloudwatchActions.SnsAction(alertTopic));
+
+    const enaAllowanceAlarm = new cloudwatch.Alarm(this, "RelayEnaAllowanceAlarm", {
+      alarmName: `${baseName}-ena-allowance-exceeded`,
+      alarmDescription: "The relay exceeded an EC2 ENA network or conntrack allowance",
+      metric: new cloudwatch.Metric({
+        namespace: `${props.prefix}/NoPing`,
+        metricName: "EnaAllowanceExceeded",
+        dimensionsMap: { Stage: props.stage },
+        period: Duration.minutes(1),
+        statistic: "Sum",
+      }),
+      threshold: 0,
+      evaluationPeriods: 1,
+      comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+    });
+    enaAllowanceAlarm.addAlarmAction(new cloudwatchActions.SnsAction(alertTopic));
+
+    const subscribers = [{ address: props.budgetEmail, subscriptionType: "EMAIL" }];
     new budgets.CfnBudget(this, "MonthlySafetyBudget", {
       budget: {
         budgetName: `${baseName}-monthly-budget`,
@@ -221,17 +281,15 @@ export class RidenowNoPingCoreStack extends Stack {
         budgetType: "COST",
         timeUnit: "MONTHLY",
       },
-      notificationsWithSubscribers: subscribers
-        ? [50, 80, 100].map((threshold) => ({
-            notification: {
-              comparisonOperator: "GREATER_THAN",
-              notificationType: "ACTUAL",
-              threshold,
-              thresholdType: "PERCENTAGE",
-            },
-            subscribers,
-          }))
-        : undefined,
+      notificationsWithSubscribers: [50, 80, 100].map((threshold) => ({
+        notification: {
+          comparisonOperator: "GREATER_THAN",
+          notificationType: "ACTUAL",
+          threshold,
+          thresholdType: "PERCENTAGE",
+        },
+        subscribers,
+      })),
     });
 
     new CfnOutput(this, "RelayInstanceId", {
@@ -248,6 +306,10 @@ export class RidenowNoPingCoreStack extends Stack {
     new CfnOutput(this, "InitialClientLimit", {
       value: props.maxClients.toString(),
       description: "Operational limit until load tests are completed",
+    });
+    new CfnOutput(this, "RelayArtifactsBucketName", {
+      value: artifactsBucket.bucketName,
+      description: "Private transient bucket used to install checksum-verified relay releases through SSM",
     });
   }
 }

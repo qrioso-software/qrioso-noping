@@ -2,9 +2,12 @@
 
 ## Plan de ejecución del MVP
 
-**Versión:** 0.5  
-**Fecha:** 27 de agosto de 2026  
-**Objetivo permanente:** ver `AGENTS.md`  
+**Versión:** 0.6
+
+**Fecha:** 28 de agosto de 2026
+
+**Objetivo permanente:** ver `AGENTS.md`
+
 **Arquitectura gráfica:** ver `docs/architecture.md`
 
 ## 1. Resultado que vamos a construir
@@ -197,7 +200,7 @@ La duplicación suele tener más potencial para mejorar jitter, pérdida y p95 q
 
 **Salida:** baseline y `cdk synth` sin desplegar.
 
-### Fase 1 — Infraestructura base (implementada en CDK)
+### Fase 1 — Infraestructura base (implementada y validable; no desplegada por este cambio)
 
 - CDK separado en core persistente y edge descartable.
 - VPC, EC2, EIP, Global Accelerator, IAM, SSM y CloudWatch.
@@ -207,7 +210,7 @@ La duplicación suele tener más potencial para mejorar jitter, pérdida y p95 q
 
 **Salida:** una sola EC2 con data plane y autorización local.
 
-### Fase 2 — Llaves y revocación
+### Fase 2 — Llaves y revocación (implementada; falta prueba E2E desplegada)
 
 - Archivo `access-keys.yaml`.
 - CLI `ridenow-token`.
@@ -218,7 +221,7 @@ La duplicación suele tener más potencial para mejorar jitter, pérdida y p95 q
 
 **Salida:** control de acceso simple, local y verificable.
 
-### Fase 3 — App Windows single-path
+### Fase 3 — App Windows single-path (código administrado implementado)
 
 - Instalador único.
 - Pantalla para registrar la llave.
@@ -229,7 +232,7 @@ La duplicación suele tener más potencial para mejorar jitter, pérdida y p95 q
 
 **Salida:** app autocontenida sin instalar WireGuard por separado.
 
-### Fase 4 — Multipath y deduplicación
+### Fase 4 — Multipath y deduplicación (implementada; falta validación Windows/AWS)
 
 - Encabezado interno y secuencias.
 - Dos túneles simultáneos.
@@ -241,7 +244,7 @@ La duplicación suele tener más potencial para mejorar jitter, pérdida y p95 q
 
 **Salida:** multipath real por EIP + Global Accelerator.
 
-### Fase 5 — Selección de Fortnite
+### Fase 5 — Selección de Fortnite (integración/ABI listos; driver firmado externo pendiente)
 
 - WFP para identificar el ejecutable y conexiones UDP.
 - Enviar solo tráfico seleccionado al motor multipath.
@@ -294,14 +297,14 @@ Al exigir dos rutas en el MVP, Global Accelerator sigue siendo obligatorio:
 
 Con `infra-up` activo, el fijo de red ronda USD 29.20/mes antes de cómputo, almacenamiento y datos. `infra-down` elimina Global Accelerator y detiene el cómputo, pero mantiene cargos residuales de EBS, Elastic IP/IPv4 y monitoreo. Se crearán alertas de presupuesto al 50%, 80% y 100%.
 
-## 9. Próximo paso
+## 9. Próximo paso para liberar
 
-1. revisar `make infra-diff` contra `ridenow-main`;
-2. ejecutar el primer `make infra-up` cuando se autorice costo;
-3. empaquetar e instalar `ridenow-accessd`, `ridenow-token` y `ridenow-relay` por SSM;
-4. implementar el data plane TUN/WireGuard y la revocación activa de peers;
-5. compilar en Windows con `build-windows.ps1`;
-6. al terminar cada sesión, ejecutar `make infra-down`.
+1. compilar el componente WFP x64 contra `apps/windows/native/include/qrioso_wfp.h` y completar pruebas WDK/Driver Verifier;
+2. obtener el catálogo firmado por Microsoft Hardware Dev Center y preparar las DLL oficiales firmadas de WireGuard;
+3. ejecutar `build-windows.ps1` en Windows con el pin SPKI y el certificado Authenticode de Qrioso;
+4. revisar `make infra-synth` y `make infra-diff`; desplegar solamente con autorización explícita;
+5. probar instalación/upgrade/rollback/crash, revocación menor a 10 segundos y 1/5/10 clientes;
+6. validar Easy Anti-Cheat y completar partidas reales directo/A/B/A+B antes de decidir GO.
 
 ## 10. Fuentes principales
 

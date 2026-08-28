@@ -3,6 +3,7 @@ package access
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -47,5 +48,32 @@ func TestRejectsUnknownYamlFields(t *testing.T) {
 	}
 	if _, err := Load(path); err == nil {
 		t.Fatal("expected unknown YAML field to fail")
+	}
+}
+
+func TestLoadExistingRejectsMissingFile(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "missing-access-keys.yaml")
+	if _, err := LoadExisting(path); err == nil {
+		t.Fatal("missing authorization source was accepted")
+	}
+	if document, err := Load(path); err != nil || len(document.Keys) != 0 {
+		t.Fatalf("owner add path should still allow first creation: document=%+v error=%v", document, err)
+	}
+}
+
+func TestLoadExistingRejectsMultipleYAMLDocuments(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "access-keys.yaml")
+	contents := "version: 1\nkeys: {}\n---\nversion: 1\nkeys: {}\n"
+	if err := os.WriteFile(path, []byte(contents), 0o640); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := LoadExisting(path); err == nil || !strings.Contains(err.Error(), "exactly one YAML document") {
+		t.Fatalf("multiple YAML documents were accepted: %v", err)
+	}
+}
+
+func TestParseTokenRejectsNonCanonicalBase64URL(t *testing.T) {
+	if _, err := ParseToken("qnp_cliente-001_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB"); err == nil {
+		t.Fatal("non-canonical token secret was accepted")
 	}
 }

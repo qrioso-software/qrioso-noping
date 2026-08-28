@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -41,8 +42,19 @@ func EmptyDocument() Document {
 }
 
 func Load(path string) (Document, error) {
+	return load(path, true)
+}
+
+// LoadExisting is the fail-closed reader for authorization and health paths.
+// Only the owner CLI's atomic add transaction may treat a missing file as a
+// first-time empty document.
+func LoadExisting(path string) (Document, error) {
+	return load(path, false)
+}
+
+func load(path string, allowMissing bool) (Document, error) {
 	contents, err := os.ReadFile(path)
-	if errors.Is(err, os.ErrNotExist) {
+	if allowMissing && errors.Is(err, os.ErrNotExist) {
 		return EmptyDocument(), nil
 	}
 	if err != nil {
@@ -54,6 +66,13 @@ func Load(path string) (Document, error) {
 	decoder.KnownFields(true)
 	if err := decoder.Decode(&document); err != nil {
 		return Document{}, fmt.Errorf("decode access file: %w", err)
+	}
+	var trailingDocument any
+	if err := decoder.Decode(&trailingDocument); !errors.Is(err, io.EOF) {
+		if err != nil {
+			return Document{}, fmt.Errorf("decode access file: %w", err)
+		}
+		return Document{}, errors.New("access file must contain exactly one YAML document")
 	}
 	if err := ValidateDocument(document); err != nil {
 		return Document{}, err
@@ -98,9 +117,19 @@ func ParseToken(token string) (id string, err error) {
 	if len(parts) != 3 || parts[0] != "qnp" || !idPattern.MatchString(parts[1]) {
 		return "", errors.New("invalid token format")
 	}
-	secret, err := base64.RawURLEncoding.DecodeString(parts[2])
-	if err != nil || len(secret) != 32 {
+	secret, err := base64.RawURLEncoding.Strict().DecodeString(parts[2])
+	if err != nil || len(secret) != 32 || base64.RawURLEncoding.EncodeToString(secret) != parts[2] {
 		return "", errors.New("token secret must contain exactly 32 random bytes")
+	}
+	allZero := true
+	for _, value := range secret {
+		if value != 0 {
+			allZero = false
+			break
+		}
+	}
+	if allZero {
+		return "", errors.New("token secret must not be all-zero")
 	}
 	return parts[1], nil
 }
@@ -218,4 +247,28 @@ func WriteAtomic(path string, document Document) error {
 		}
 	}
 	return nil
+}
+
+// UpdateAtomic serializes the complete read-modify-write transaction used by
+// the operator CLI. Locking only the final rename would still allow concurrent
+// add/revoke commands to overwrite each other's validated snapshot.
+func UpdateAtomic(path string, mutate func(*Document) error) error {
+	directory := filepath.Dir(path)
+	if err := os.MkdirAll(directory, 0o750); err != nil {
+		return fmt.Errorf("create access directory: %w", err)
+	}
+	release, err := acquireExclusiveLock(path + ".lock")
+	if err != nil {
+		return fmt.Errorf("lock access file: %w", err)
+	}
+	defer release()
+
+	document, err := Load(path)
+	if err != nil {
+		return err
+	}
+	if err := mutate(&document); err != nil {
+		return err
+	}
+	return WriteAtomic(path, document)
 }

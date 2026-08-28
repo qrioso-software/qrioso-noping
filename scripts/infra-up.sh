@@ -7,12 +7,19 @@ source "${SCRIPT_DIR}/infra-common.sh"
 
 verify_aws_identity
 require_docker
+require_budget_email
 
 if stack_exists "${CORE_STACK_NAME}"; then
   echo "Core ${CORE_STACK_NAME} existente; no se actualiza durante el encendido diario."
 else
+  if [[ "${CONFIRM_DEPLOY:-}" != "${CORE_STACK_NAME}" ]]; then
+    echo "El primer despliegue crea recursos con costo y exige confirmación exacta." >&2
+    echo "Ejecuta: CONFIRM_DEPLOY=${CORE_STACK_NAME} make infra-up" >&2
+    exit 1
+  fi
   echo "Creando el core ${CORE_STACK_NAME} por primera vez..."
-  "${SCRIPT_DIR}/cdk.sh" deploy "${CORE_STACK_NAME}" --exclusively --require-approval never
+  CONFIRM_CDK_ACTION="deploy:${CORE_STACK_NAME}" \
+    "${SCRIPT_DIR}/cdk.sh" deploy "${CORE_STACK_NAME}" --exclusively --require-approval never
 fi
 
 require_stack_stable "${CORE_STACK_NAME}"
@@ -61,7 +68,8 @@ aws ec2 wait instance-status-ok \
   --instance-ids "${instance_id}"
 
 echo "Creando/actualizando el edge ${EDGE_STACK_NAME}..."
-"${SCRIPT_DIR}/cdk.sh" deploy "${EDGE_STACK_NAME}" \
+CONFIRM_CDK_ACTION="deploy:${EDGE_STACK_NAME}" \
+  "${SCRIPT_DIR}/cdk.sh" deploy "${EDGE_STACK_NAME}" \
   --exclusively \
   --require-approval never \
   --parameters "${EDGE_STACK_NAME}:RelayInstanceId=${instance_id}"
@@ -69,6 +77,19 @@ echo "Creando/actualizando el edge ${EDGE_STACK_NAME}..."
 elastic_ip="$(stack_output "${CORE_STACK_NAME}" "RelayElasticIpAddress")"
 accelerator_dns="$(stack_output "${EDGE_STACK_NAME}" "AcceleratorDnsName")"
 
+if ! "${SCRIPT_DIR}/relay-install.sh" "${instance_id}" "${elastic_ip}" "${accelerator_dns}"; then
+  echo "La instalación del relay falló; eliminando edge y deteniendo EC2 para no dejar costo activo inútil." >&2
+  CONFIRM_CDK_ACTION="destroy:${EDGE_STACK_NAME}" \
+    "${SCRIPT_DIR}/cdk.sh" destroy "${EDGE_STACK_NAME}" --exclusively --force || true
+  aws ec2 stop-instances \
+    --profile "${AWS_PROFILE}" \
+    --region "${AWS_REGION}" \
+    --instance-ids "${instance_id}" \
+    >/dev/null || true
+  exit 1
+fi
+
 echo "Infraestructura encendida."
 echo "Ruta A: ${elastic_ip}:51820"
 echo "Ruta B: ${accelerator_dns}:51821"
+echo "Relay, WireGuard, revocación, health checks y data plane multipath instalados y verificados."

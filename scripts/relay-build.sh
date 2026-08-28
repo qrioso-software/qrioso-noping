@@ -15,6 +15,8 @@ docker buildx build \
   "${PROJECT_ROOT}/relay"
 
 cp "${PROJECT_ROOT}"/relay/systemd/*.service "${OUTPUT_DIR}/"
+cp "${PROJECT_ROOT}"/relay/systemd/*.timer "${OUTPUT_DIR}/"
+cp "${PROJECT_ROOT}"/relay/systemd/*.sh "${OUTPUT_DIR}/"
 cp "${PROJECT_ROOT}/relay/config/access-keys.example.yaml" "${OUTPUT_DIR}/"
 
 echo "Binarios ARM64: ${OUTPUT_DIR}"

@@ -1,10 +1,16 @@
-Qrioso NoPing - build de desarrollo
-==================================
+Qrioso NoPing
+=============
 
-1. Ejecuta install.ps1 como Administrador.
-2. Abre Qrioso NoPing desde el acceso directo del escritorio.
-3. Para removerlo, ejecuta uninstall.ps1 como Administrador desde este paquete.
+1. Descomprime el ZIP completo en una carpeta local.
+2. Verifica el SHA-256 publicado por Qrioso.
+3. Ejecuta install.ps1 como Administrador.
+4. Abre Qrioso NoPing desde Inicio o el acceso directo del escritorio.
+5. Registra la llave entregada por Qrioso y elige Ruta A, Ruta B o Multipath A+B.
 
-Este build todavía no contiene el data plane WireGuard/WFP. Sirve para validar
-la UI, el Windows Service y el proceso de instalación durante el desarrollo.
+El instalador comprueba su firma, el manifiesto de todos los archivos, las
+firmas de los binarios y el catálogo del driver antes de modificar Windows.
+La llave se valida por HTTPS con pin SPKI y se guarda cifrada con DPAPI.
 
+Para remover el producto usa “Aplicaciones instaladas” o el acceso
+“Desinstalar Qrioso NoPing”. La desinstalación elimina por defecto la llave
+local cifrada; el parámetro -KeepLocalAccess permite conservarla.

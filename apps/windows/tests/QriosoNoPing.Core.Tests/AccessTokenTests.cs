@@ -8,7 +8,7 @@ public sealed class AccessTokenTests
     [Fact]
     public void AcceptsExpectedTokenFormat()
     {
-        const string value = "qnp_cliente-001_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+        const string value = "qnp_cliente-001_AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE";
 
         bool parsed = AccessToken.TryParse(value, out AccessToken? token);
 
@@ -26,5 +26,11 @@ public sealed class AccessTokenTests
     public void RejectsMalformedTokens(string value)
     {
         Assert.False(AccessToken.TryParse(value, out _));
+    }
+
+    [Fact]
+    public void RejectsNonCanonicalSecretEncoding()
+    {
+        Assert.False(AccessToken.TryParse("qnp_cliente-001_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB", out _));
     }
 }

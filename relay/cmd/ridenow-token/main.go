@@ -54,24 +54,20 @@ func add(arguments []string) error {
 		return fmt.Errorf("--id is required")
 	}
 
-	document, err := access.Load(*path)
-	if err != nil {
-		return err
-	}
 	token := *tokenFlag
 	if token == "" {
 		token = os.Getenv("RIDENOW_TOKEN")
 	}
 	if token == "" {
-		token, err = access.GenerateToken(*id)
+		generatedToken, err := access.GenerateToken(*id)
 		if err != nil {
 			return err
 		}
+		token = generatedToken
 	}
-	if err := access.Add(&document, *id, token, *maxDevices, *note); err != nil {
-		return err
-	}
-	if err := access.WriteAtomic(*path, document); err != nil {
+	if err := access.UpdateAtomic(*path, func(document *access.Document) error {
+		return access.Add(document, *id, token, *maxDevices, *note)
+	}); err != nil {
 		return err
 	}
 	fmt.Println("Llave creada. Guárdala ahora; no se volverá a mostrar:")
@@ -85,7 +81,7 @@ func list(arguments []string) error {
 	if err := flags.Parse(arguments); err != nil {
 		return err
 	}
-	document, err := access.Load(*path)
+	document, err := access.LoadExisting(*path)
 	if err != nil {
 		return err
 	}
@@ -105,14 +101,9 @@ func revoke(arguments []string) error {
 	if flags.NArg() != 1 {
 		return fmt.Errorf("usage: ridenow-token revoke [--file path] <id>")
 	}
-	document, err := access.Load(*path)
-	if err != nil {
-		return err
-	}
-	if err := access.Revoke(&document, flags.Arg(0)); err != nil {
-		return err
-	}
-	if err := access.WriteAtomic(*path, document); err != nil {
+	if err := access.UpdateAtomic(*path, func(document *access.Document) error {
+		return access.Revoke(document, flags.Arg(0))
+	}); err != nil {
 		return err
 	}
 	fmt.Printf("Llave %s revocada.\n", flags.Arg(0))
@@ -125,7 +116,7 @@ func validate(arguments []string) error {
 	if err := flags.Parse(arguments); err != nil {
 		return err
 	}
-	document, err := access.Load(*path)
+	document, err := access.LoadExisting(*path)
 	if err != nil {
 		return err
 	}

@@ -1,7 +1,9 @@
 # Arquitectura de Qrioso NoPing
 
-**Versión:** 0.5  
-**Fecha:** 27 de agosto de 2026  
+**Versión:** 0.6
+
+**Fecha:** 28 de agosto de 2026
+
 **Alcance:** MVP autocontenido para Windows, llave local, Fortnite NA-East, multipath y una EC2 en Virginia
 
 El producto visible conserva el nombre Qrioso NoPing. En AWS, `PROJECT_PREFIX=ridenow` genera los stacks `ridenow-noping-dev-core` y `ridenow-noping-dev-edge`; todos los nombres físicos configurables comienzan con `ridenow-`.
@@ -235,7 +237,7 @@ flowchart TB
     FILTER["WFP selector/callout<br/>firmado"]
     BOND["Multipath Engine<br/>duplicación + dedup"]
     STORE["DPAPI<br/>llave + claves"]
-    UPDATE["Updater firmado<br/>rollback"]
+    UPDATE["Actualización transaccional<br/>rollback"]
 
     INSTALLER --> UI
     INSTALLER --> SERVICE
@@ -273,7 +275,7 @@ flowchart LR
 - `wg-accelerated`: UDP 51821 por Global Accelerator.
 - Health responder TCP para Global Accelerator.
 - SSM Session Manager, sin SSH público.
-- CloudWatch + métricas ENA.
+- CloudWatch con salud real de servicios, contadores ENA y alarmas de allowances.
 
 El límite inicial será **10 PC simultáneas**. Solo se aumentará después de medir CPU, PPS, conntrack, ancho de banda y latencia de deduplicación.
 
@@ -336,15 +338,16 @@ flowchart LR
     WIN -->|"build local"| ART
 ```
 
-CDK, Go y las pruebas .NET compartidas corren en Docker sobre macOS. No hay compilación remota. XAML/WinUI, Windows Service y el futuro WFP/WDK se compilan en la PC Windows con `build-windows.ps1`.
+CDK, Go y las pruebas .NET compartidas corren en Docker sobre macOS. No hay compilación remota. XAML/WinUI, Windows Service y WFP/WDK se compilan en la PC Windows con `build-windows.ps1`.
 
 ## 12. Estado de implementación
 
-- Implementado: CDK en stacks core/edge, prefijo configurable, VPC/EC2/EIP/Global Accelerator/SSM/alarmas/budget y ciclo up/down.
-- Implementado: formato de llaves, hashes, YAML estricto, escritura atómica, CLI y autorización HTTPS básica.
-- Implementado: primitiva probada de deduplicación first-arrival-wins.
-- Implementado: solución WinUI/Service/Core, script de build local Windows y paquete de instalación de desarrollo.
-- Pendiente: registro y revocación activa de peers WireGuard, TUN, encapsulado bidireccional, WFP, DPAPI, telemetría y el instalador firmado.
+- Implementado: CDK core/edge, ciclo de costo, SSM, budget, health checks reales, métricas ENA y alarmas.
+- Implementado: llaves canónicas, YAML estricto, CLI atómico, HTTPS fijado, rate limiting, leases y revocación activa de ambos peers.
+- Implementado: dos WireGuard del relay, TUN, `nftables` SNAT, framing bidireccional, probes, MTU, modos A/B/A+B y deduplicación acotada first-arrival-wins.
+- Implementado: UI WinUI brandada, protocolo local, DPAPI con ACL, Windows Service, WireGuard embebible, motor multipath administrado y fallback directo.
+- Implementado: instalador transaccional, manifiesto firmado, validación de catálogo y gate de release que impide paquetes incompletos o sin firma.
+- Bloqueo externo de release: compilar el componente WFP x64 contra el ABI documentado, obtener firma Microsoft del driver y firma Authenticode de Qrioso; luego ejecutar pruebas reales en Windows/Easy Anti-Cheat, carga y partidas A/B. Esos binarios y certificados no se guardan en Git.
 
 ## 13. Fuentes
 

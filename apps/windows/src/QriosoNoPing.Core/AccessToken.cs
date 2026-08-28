@@ -21,10 +21,24 @@ public sealed partial record AccessToken(string Id, string Value)
             return false;
         }
 
+        string encodedSecret = match.Groups[2].Value;
+        try
+        {
+            byte[] secret = Convert.FromBase64String(encodedSecret.Replace('-', '+').Replace('_', '/') + "=");
+            string canonical = Convert.ToBase64String(secret).TrimEnd('=').Replace('+', '-').Replace('/', '_');
+            if (secret.Length != 32 || secret.All(value => value == 0) || !string.Equals(canonical, encodedSecret, StringComparison.Ordinal))
+            {
+                return false;
+            }
+        }
+        catch (FormatException)
+        {
+            return false;
+        }
+
         token = new AccessToken(match.Groups[1].Value, value.Trim());
         return true;
     }
 
     public string Redacted => $"qnp_{Id}_***";
 }
-
