@@ -5,6 +5,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck disable=SC1091
 source "${SCRIPT_DIR}/load-env.sh"
 
+windows_command="$(${SCRIPT_DIR}/windows-command.sh)"
+grep -Fqx -- "$windows_command" "${PROJECT_ROOT}/README.md"
+grep -Fqx -- "$windows_command" "${PROJECT_ROOT}/apps/windows/native/README.md"
+
 docker run --rm \
   --volume "${PROJECT_ROOT}:/source:ro" \
   --mount "type=volume,source=${PROJECT_PREFIX}-noping-nuget,target=/root/.nuget/packages" \

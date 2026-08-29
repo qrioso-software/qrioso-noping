@@ -216,7 +216,13 @@ Para el piloto local, ejecuta en macOS:
 make windows-command
 ```
 
-El resultado es un único comando sin parámetros para pegar en PowerShell como Administrador. `build-windows-pilot.ps1` reutiliza o crea el certificado local de desarrollo, habilita Test Mode y ejecuta el build completo. En el primer arranque, el servicio registra automáticamente la llave compilada y guarda el estado con DPAPI.
+El comando vigente, para copiar y pegar en PowerShell como Administrador desde la raíz del repositorio en Windows, es:
+
+```powershell
+git pull --ff-only origin main; if ($LASTEXITCODE -eq 0) { Set-ExecutionPolicy -Scope Process Bypass -Force; & ".\build-windows-pilot.ps1" }
+```
+
+`make windows-command` imprime exactamente ese mismo comando. `build-windows-pilot.ps1` reutiliza o crea el certificado local de desarrollo, habilita Test Mode y ejecuta el build completo. En el primer arranque, el servicio registra automáticamente la llave compilada y guarda el estado con DPAPI.
 
 Para el piloto exclusivo del propietario puede usarse `-DriverSigningMode Test` con Windows Test Mode y el certificado `Development`; ese ZIP no se distribuye.
 
