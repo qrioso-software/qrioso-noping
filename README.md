@@ -189,6 +189,8 @@ sudo RIDENOW_TOKEN='qnp_cliente-001_...' ridenow-token add --id cliente-001
 
 ## Compilar en la PC Windows
 
+Para compilar e instalar el piloto con certificado local, consulta la [guía del componente WFP y Windows Test Mode](apps/windows/native/README.md#piloto-local-en-una-sola-pc).
+
 No existe compilación remota ni workflow de GitHub. Copia o clona el repositorio en una PC Windows 11 x64 que tenga:
 
 - Visual Studio con desarrollo de escritorio .NET;
@@ -198,7 +200,7 @@ No existe compilación remota ni workflow de GitHub. Copia o clona el repositori
 - .NET SDK 10;
 - Git for Windows y acceso de red para la primera preparación.
 
-`build-windows.ps1` descarga `wireguard.dll`, compila `tunnel.dll` y compila el WFP automáticamente. En producción se reemplaza el catálogo generado por el devuelto por Microsoft, según `apps\windows\native\README.md`. Desde PowerShell, en la raíz del repositorio:
+`build-windows.ps1` descarga `wireguard.dll`, compila `tunnel.dll` y compila el WFP automáticamente. En producción se reemplaza el catálogo generado por el devuelto por Microsoft, según la [documentación nativa de Windows](apps/windows/native/README.md). Desde PowerShell, en la raíz del repositorio:
 
 ```powershell
 Set-ExecutionPolicy -Scope Process Bypass

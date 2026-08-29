@@ -51,7 +51,6 @@ export class RidenowNoPingEdgeStack extends Stack {
           weight: 128,
         },
       ],
-      portOverrides: [{ listenerPort: 51821, endpointPort: 51821 }],
       healthCheckIntervalSeconds: 10,
       healthCheckPath: "/healthz",
       healthCheckPort: 8080,

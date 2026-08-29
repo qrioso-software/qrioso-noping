@@ -7,6 +7,7 @@ Requires=wg-quick@wg-direct.service wg-quick@wg-accelerated.service ridenow-acce
 [Service]
 Type=simple
 User=root
+Group=ridenow
 Environment=RIDENOW_GA_HEALTH_LISTEN=0.0.0.0:8080
 Environment=RIDENOW_RELAY_HEALTH_LISTEN=127.0.0.1:8082
 Environment=RIDENOW_SESSION_FILE=/run/ridenow-noping/sessions.json

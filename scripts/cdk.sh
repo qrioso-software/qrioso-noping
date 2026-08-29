@@ -158,30 +158,7 @@ if [[ "${1:-}" == "deploy" ]]; then
 
   target_stack="${CDK_ARGUMENTS[1]}"
   run_cdk synth "${target_stack}" --exclusively
-  diff_args=(diff "${target_stack}" --exclusively --no-change-set)
-  deploy_options=("${CDK_ARGUMENTS[@]:2}")
-  option_index=0
-  while [[ "${option_index}" -lt "${#deploy_options[@]}" ]]; do
-    option="${deploy_options[${option_index}]}"
-    case "${option}" in
-      --parameters)
-        if [[ "$((option_index + 1))" -ge "${#deploy_options[@]}" ]]; then
-          echo "Falta el valor de --parameters." >&2
-          exit 2
-        fi
-        diff_args+=("${option}" "${deploy_options[$((option_index + 1))]}")
-        option_index=$((option_index + 2))
-        ;;
-      --parameters=*)
-        diff_args+=("${option}")
-        option_index=$((option_index + 1))
-        ;;
-      *)
-        option_index=$((option_index + 1))
-        ;;
-    esac
-  done
-  run_cdk "${diff_args[@]}"
+  run_cdk diff "${target_stack}" --exclusively --no-change-set
 fi
 
 run_cdk "${CDK_ARGUMENTS[@]}"

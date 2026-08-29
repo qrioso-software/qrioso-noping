@@ -109,7 +109,7 @@ export class RidenowNoPingCoreStack extends Stack {
     const userData = ec2.UserData.forLinux();
     userData.addCommands(
       "set -euxo pipefail",
-      "dnf install -y wireguard-tools nftables iproute ethtool jq python3 curl openssl",
+      "dnf install -y wireguard-tools nftables iproute ethtool jq python3 curl-minimal openssl",
       `getent group ${props.prefix} >/dev/null || groupadd --system ${props.prefix}`,
       `id ${props.prefix} >/dev/null 2>&1 || useradd --system --gid ${props.prefix} --home-dir /var/lib/${props.prefix}-noping --create-home --shell /sbin/nologin ${props.prefix}`,
       `install -d -m 02750 -o root -g ${props.prefix} /etc/${props.prefix}-noping`,
