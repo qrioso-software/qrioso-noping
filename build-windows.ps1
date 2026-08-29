@@ -5,9 +5,6 @@ param(
     [ValidateSet("Release")]
     [string]$Configuration = "Release",
     [Parameter(Mandatory = $true)]
-    [Alias("EnvFile")]
-    [string]$InfraEnvironmentFile,
-    [Parameter(Mandatory = $true)]
     [string]$SigningCertificateThumbprint,
     [ValidateSet("Microsoft", "Test")]
     [string]$DriverSigningMode = "Microsoft",
@@ -20,9 +17,7 @@ $ErrorActionPreference = "Stop"
 $root = $PSScriptRoot
 
 . (Join-Path $root "apps\windows\build\Read-InfraEnvironment.ps1")
-$infraEnvironment = Read-QriosoInfraEnvironment -Path $InfraEnvironmentFile
-$AccessApiBaseUri = $infraEnvironment.AccessApiBaseUri
-$TlsSpkiPin = $infraEnvironment.TlsSpkiPin
+$infraEnvironment = Read-QriosoInfraEnvironment -Path (Join-Path $root ".env.infra")
 
 function Get-SignTool {
     $command = Get-Command signtool.exe -ErrorAction SilentlyContinue
@@ -103,14 +98,6 @@ if (-not (Get-Command dotnet -ErrorAction SilentlyContinue)) {
 }
 $sdkVersion = (& dotnet --version).Trim()
 if (-not $sdkVersion.StartsWith("10.")) { throw "Se requiere .NET SDK 10; versión encontrada: $sdkVersion" }
-
-try { $accessUri = [Uri]$AccessApiBaseUri } catch { throw "AccessApiBaseUri no es una URI absoluta válida." }
-if (-not $accessUri.IsAbsoluteUri -or $accessUri.Scheme -ne "https" -or $accessUri.Port -ne 8443 -or
-    $accessUri.AbsolutePath -ne "/" -or $accessUri.Query -or $accessUri.Fragment -or $accessUri.UserInfo -or
-    $accessUri.HostNameType -notin [UriHostNameType]::Dns, [UriHostNameType]::IPv4) {
-    throw "AccessApiBaseUri debe ser un origen HTTPS en el puerto 8443, sin ruta, query ni fragmento."
-}
-if ($TlsSpkiPin -notmatch "^sha256/[A-Za-z0-9+/]{43}=$") { throw "TlsSpkiPin debe tener el formato sha256/<base64 SHA-256>." }
 
 Set-Location $root
 $windowsRoot = Join-Path $root "apps\windows"
@@ -208,8 +195,25 @@ Write-Host "2/6 Compilando la aplicación WinUI autocontenida..."
 & dotnet publish (Join-Path $windowsRoot "src\QriosoNoPing.App\QriosoNoPing.App.csproj") --configuration $Configuration --runtime "win-$Architecture" --self-contained true -p:Platform=$Architecture --output $appOutput
 if ($LASTEXITCODE -ne 0) { throw "Falló la compilación de la aplicación WinUI." }
 Write-Host "3/6 Compilando el Windows Service autocontenido..."
-& dotnet publish (Join-Path $windowsRoot "src\QriosoNoPing.Service\QriosoNoPing.Service.csproj") --configuration $Configuration --runtime "win-$Architecture" --self-contained true -p:PublishSingleFile=true --output $serviceOutput
-if ($LASTEXITCODE -ne 0) { throw "Falló la compilación del Windows Service." }
+$serviceProjectRoot = Join-Path $windowsRoot "src\QriosoNoPing.Service"
+$embeddedConfigurationPath = Join-Path $serviceProjectRoot "obj\QriosoNoPing.EmbeddedConfiguration.g.cs"
+New-Item -ItemType Directory -Path (Split-Path -Parent $embeddedConfigurationPath) -Force | Out-Null
+$embeddedConfigurationSource = @"
+using System.Reflection;
+
+[assembly: AssemblyMetadata("QriosoNoPing.AccessApiBaseUri", "$($infraEnvironment.AccessApiBaseUri)")]
+[assembly: AssemblyMetadata("QriosoNoPing.TlsSpkiPin", "$($infraEnvironment.TlsSpkiPin)")]
+[assembly: AssemblyMetadata("QriosoNoPing.AccessToken", "$($infraEnvironment.AccessToken)")]
+"@
+try {
+    [IO.File]::WriteAllText($embeddedConfigurationPath, $embeddedConfigurationSource, [Text.UTF8Encoding]::new($false))
+    & dotnet publish (Join-Path $serviceProjectRoot "QriosoNoPing.Service.csproj") --configuration $Configuration --runtime "win-$Architecture" --self-contained true -p:PublishSingleFile=true --output $serviceOutput
+    if ($LASTEXITCODE -ne 0) { throw "Falló la compilación del Windows Service." }
+}
+finally {
+    if (Test-Path -LiteralPath $embeddedConfigurationPath) { Remove-Item -LiteralPath $embeddedConfigurationPath -Force }
+    $embeddedConfigurationSource = $null
+}
 
 New-Item -ItemType Directory -Path (Join-Path $serviceNativeOutput "driver") -Force | Out-Null
 New-Item -ItemType Directory -Path (Join-Path $serviceNativeOutput "licenses") -Force | Out-Null
@@ -228,10 +232,8 @@ Copy-Item (Join-Path $windowsRoot "packaging\LEEME.txt") $packageRoot
 [IO.File]::WriteAllText((Join-Path $packageRoot "driver-signing-mode.txt"), $DriverSigningMode, [Text.UTF8Encoding]::new($false))
 $installerPath = Join-Path $packageRoot "install.ps1"
 $installer = [IO.File]::ReadAllText($installerPath)
-$installer = $installer.Replace("__ACCESS_API_BASE_URI__", $accessUri.AbsoluteUri.TrimEnd('/'))
-$installer = $installer.Replace("__TLS_SPKI_PIN__", $TlsSpkiPin)
 $installer = $installer.Replace("__SIGNER_THUMBPRINT__", $thumbprint)
-if ($installer.Contains("__ACCESS_API_BASE_URI__") -or $installer.Contains("__TLS_SPKI_PIN__") -or $installer.Contains("__SIGNER_THUMBPRINT__")) { throw "No se pudieron sellar los parámetros del instalador." }
+if ($installer.Contains("__SIGNER_THUMBPRINT__")) { throw "No se pudo sellar el firmante del instalador." }
 [IO.File]::WriteAllText($installerPath, $installer, [Text.UTF8Encoding]::new($false))
 $uninstallerPath = Join-Path $packageRoot "uninstall.ps1"
 $uninstaller = [IO.File]::ReadAllText($uninstallerPath).Replace("__SIGNER_THUMBPRINT__", $thumbprint)

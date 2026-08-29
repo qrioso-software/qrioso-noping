@@ -25,4 +25,7 @@
   <ItemGroup>
     <ProjectReference Include="../QriosoNoPing.Core/QriosoNoPing.Core.csproj" />
   </ItemGroup>
+  <ItemGroup Condition="Exists('$(MSBuildProjectDirectory)/obj/QriosoNoPing.EmbeddedConfiguration.g.cs')">
+    <Compile Include="$(MSBuildProjectDirectory)/obj/QriosoNoPing.EmbeddedConfiguration.g.cs" />
+  </ItemGroup>
 </Project>

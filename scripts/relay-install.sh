@@ -194,14 +194,25 @@ fi
 
 infra_env_temp="$(mktemp "${PROJECT_ROOT}/.env.infra.tmp.XXXXXX")"
 chmod 0600 "${infra_env_temp}"
+existing_access_token=""
+if [[ -f "${PROJECT_ROOT}/.env.infra" ]]; then
+  existing_access_token="$(sed -n 's/^AccessToken=//p' "${PROJECT_ROOT}/.env.infra")"
+  if [[ -n "${existing_access_token}" && ! "${existing_access_token}" =~ ^qnp_[a-z0-9][a-z0-9-]{2,31}_[A-Za-z0-9_-]{43}$ ]]; then
+    echo "AccessToken existente en .env.infra no tiene el formato esperado; no se reemplazó el fichero." >&2
+    exit 1
+  fi
+fi
 printf '%s\n' \
-  '# Configuración de infraestructura consumida por build-windows.ps1' \
+  '# Configuración local compilada dentro del piloto de Windows; no subir a Git' \
   "AccessApiBaseUri=https://${elastic_ip}:8443" \
   "TlsSpkiPin=${tls_spki_pin}" \
   > "${infra_env_temp}"
+if [[ -n "${existing_access_token}" ]]; then
+  printf '%s\n' "AccessToken=${existing_access_token}" >> "${infra_env_temp}"
+fi
 mv -f -- "${infra_env_temp}" "${PROJECT_ROOT}/.env.infra"
 infra_env_temp=""
 
 printf '%s\n' "${tls_spki_line}"
 echo "Servicios de control instalados en ${instance_id} por SSM y artefacto SHA-256 ${artifact_sha256}."
-echo "Configuración para el build de Windows guardada en ${PROJECT_ROOT}/.env.infra."
+echo "Configuración local del piloto guardada en ${PROJECT_ROOT}/.env.infra; se preservó AccessToken si ya existía."

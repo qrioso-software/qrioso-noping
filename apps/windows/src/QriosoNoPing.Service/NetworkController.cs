@@ -28,6 +28,16 @@ public sealed class NetworkController(
     {
         await tunnels.StopAsync(cancellationToken);
         persistedState = await LoadProtectedStateAsync(cancellationToken);
+        if (persistedState is null)
+        {
+            ServiceResponse registration = await RegisterAsync(configuration.PilotAccessToken, cancellationToken);
+            if (!registration.Success)
+            {
+                state = "unconfigured";
+                message = registration.Error ?? "No se pudo registrar automáticamente el acceso del piloto.";
+                return;
+            }
+        }
         state = persistedState is null ? "unconfigured" : "disconnected";
         message ??= persistedState is null ? "Registra una llave de acceso." : "Listo para conectar.";
     }

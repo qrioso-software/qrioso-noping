@@ -1,11 +1,13 @@
-using System.Text.Json;
+using System.Reflection;
 using System.Text.RegularExpressions;
+using QriosoNoPing.Core;
 
 namespace QriosoNoPing.Service;
 
 public sealed record ServiceConfiguration(
     string AccessApiBaseUri,
     string TlsSpkiPin,
+    string PilotAccessToken,
     string[] FortniteExecutables,
     string NativeDirectory)
 {
@@ -16,15 +18,26 @@ public sealed record ServiceConfiguration(
 
     public static ServiceConfiguration Load()
     {
-        string programData = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
-        string path = Environment.GetEnvironmentVariable("QRIOSO_NOPING_CONFIG")
-            ?? Path.Combine(programData, "Qrioso NoPing", "config.json");
-        using FileStream stream = File.OpenRead(path);
-        ServiceConfiguration configuration = JsonSerializer.Deserialize<ServiceConfiguration>(stream, new JsonSerializerOptions
-        {
-            PropertyNameCaseInsensitive = true,
-            UnmappedMemberHandling = System.Text.Json.Serialization.JsonUnmappedMemberHandling.Disallow
-        }) ?? throw new InvalidDataException("Qrioso NoPing configuration is empty.");
+        Dictionary<string, string> metadata = Assembly.GetExecutingAssembly()
+            .GetCustomAttributes<AssemblyMetadataAttribute>()
+            .Where(attribute => attribute.Key.StartsWith("QriosoNoPing.", StringComparison.Ordinal) && attribute.Value is not null)
+            .ToDictionary(attribute => attribute.Key, attribute => attribute.Value!, StringComparer.Ordinal);
+        string Required(string key) => metadata.TryGetValue($"QriosoNoPing.{key}", out string? value) && !string.IsNullOrWhiteSpace(value)
+            ? value
+            : throw new InvalidDataException($"Missing embedded pilot configuration: {key}.");
+
+        ServiceConfiguration configuration = new(
+            Required("AccessApiBaseUri"),
+            Required("TlsSpkiPin"),
+            Required("AccessToken"),
+            [
+                "FortniteClient-Win64-Shipping.exe",
+                "FortniteClient-Win64-Shipping_BE.exe",
+                "FortniteClient-Win64-Shipping_EAC_EOS.exe"
+            ],
+            Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
+                "Qrioso NoPing", "service", "native"));
         configuration.Validate();
         return configuration;
     }
@@ -42,6 +55,11 @@ public sealed record ServiceConfiguration(
         if (!PinPattern.IsMatch(TlsSpkiPin))
         {
             throw new InvalidDataException("TlsSpkiPin must be a SHA-256 SPKI pin.");
+        }
+
+        if (!AccessToken.TryParse(PilotAccessToken, out _))
+        {
+            throw new InvalidDataException("PilotAccessToken must be a valid Qrioso NoPing access token.");
         }
 
         if (FortniteExecutables is null || FortniteExecutables.Length == 0 || FortniteExecutables.Length > 8 || FortniteExecutables.Any(value => !ExecutablePattern.IsMatch(value)))

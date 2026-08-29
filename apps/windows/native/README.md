@@ -47,10 +47,10 @@ Para firmar la aplicación de una prueba exclusivamente en la misma PC puede cre
 
 Mientras Partner Center no esté disponible, el propietario puede probar el producto en su propia PC con Windows Test Mode. Esto mantiene separado el producto distribuible del piloto local:
 
-En macOS, `make windows-command` imprime el comando completo que debe copiarse y pegarse en PowerShell como Administrador desde la raíz del repositorio en Windows. El comando llama a `build-windows-pilot.ps1`, que crea o reutiliza el certificado de desarrollo y pasa `.env.infra` al build.
+En macOS, `make windows-command` imprime el comando completo. En Windows se pega ese comando en PowerShell como Administrador; `build-windows-pilot.ps1` crea o reutiliza el certificado de desarrollo y compila automáticamente el `.env.infra` local dentro del servicio. No se pasa ningún parámetro y el primer arranque registra la llave automáticamente.
 
 ```powershell
-Set-ExecutionPolicy -Scope Process Bypass -Force; & ".\build-windows-pilot.ps1" -InfraEnvironmentFile ".\.env.infra"
+Set-ExecutionPolicy -Scope Process Bypass -Force; & ".\build-windows-pilot.ps1"
 ```
 
 `build-windows.ps1` recompila el WFP, firma el SYS y el catálogo con el certificado `Development`, valida el catálogo exacto y marca el ZIP como `Test`. No distribuyas ese ZIP. Para regresar al modo normal ejecuta `bcdedit /set testsigning off` y reinicia. El flujo `Microsoft` sigue siendo obligatorio para otros usuarios o una release pública.

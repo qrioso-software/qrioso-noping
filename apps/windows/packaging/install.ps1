@@ -4,14 +4,12 @@ param()
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
-$packageAccessApiBaseUri = "__ACCESS_API_BASE_URI__"
-$packageTlsSpkiPin = "__TLS_SPKI_PIN__"
 $expectedSignerThumbprint = "__SIGNER_THUMBPRINT__"
 
 function Assert-PackageIntegrity {
     param([string]$PackageRoot)
 
-    if ($expectedSignerThumbprint -notmatch "^[0-9A-F]{40}$" -or $packageAccessApiBaseUri.StartsWith("__") -or $packageTlsSpkiPin.StartsWith("__")) {
+    if ($expectedSignerThumbprint -notmatch "^[0-9A-F]{40}$") {
         throw "Este instalador no fue sellado por build-windows.ps1 y no puede distribuirse."
     }
     $selfSignature = Get-AuthenticodeSignature -LiteralPath $PSCommandPath
@@ -117,24 +115,6 @@ function Set-QriosoDataPermissions {
     if ($LASTEXITCODE -ne 0) { throw "No se pudieron proteger las llaves locales." }
 }
 
-function Write-QriosoConfiguration {
-    param([string]$Path, [string]$NativeDirectory)
-    $configuration = [ordered]@{
-        accessApiBaseUri = $packageAccessApiBaseUri
-        tlsSpkiPin = $packageTlsSpkiPin
-        fortniteExecutables = @("FortniteClient-Win64-Shipping.exe", "FortniteClient-Win64-Shipping_BE.exe", "FortniteClient-Win64-Shipping_EAC_EOS.exe")
-        nativeDirectory = $NativeDirectory
-    }
-    $temporary = "$Path.$([Guid]::NewGuid().ToString('N')).tmp"
-    try {
-        [IO.File]::WriteAllText($temporary, ($configuration | ConvertTo-Json -Depth 3), [Text.UTF8Encoding]::new($false))
-        Move-Item -LiteralPath $temporary -Destination $Path -Force
-    }
-    finally {
-        if (Test-Path -LiteralPath $temporary) { Remove-Item -LiteralPath $temporary -Force }
-    }
-}
-
 $principal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
 if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) { throw "Ejecuta install.ps1 desde PowerShell como Administrador." }
 
@@ -166,7 +146,6 @@ if ($catalog.Status -ne [System.Management.Automation.SignatureStatus]::Valid) {
 $installRoot = Join-Path $env:ProgramFiles "Qrioso NoPing"
 $dataRoot = Join-Path $env:ProgramData "Qrioso NoPing"
 $privateRoot = Join-Path $dataRoot "private"
-$configPath = Join-Path $dataRoot "config.json"
 $installId = [Guid]::NewGuid().ToString("N")
 $stagingRoot = Join-Path $env:ProgramFiles "Qrioso NoPing.installing-$installId"
 $backupRoot = Join-Path $env:ProgramFiles "Qrioso NoPing.backup-$installId"
@@ -180,7 +159,6 @@ $swapped = $false
 $previousMoved = $false
 $wfpInstalled = $false
 $serviceExisted = [bool](Get-Service -Name $serviceName -ErrorAction SilentlyContinue)
-$previousConfiguration = if (Test-Path -LiteralPath $configPath) { [IO.File]::ReadAllBytes($configPath) } else { $null }
 $completed = $false
 try {
     New-Item -ItemType Directory -Path $stagingRoot | Out-Null
@@ -196,7 +174,6 @@ try {
     $swapped = $true
 
     Set-QriosoDataPermissions -DataRoot $dataRoot -PrivateRoot $privateRoot
-    Write-QriosoConfiguration -Path $configPath -NativeDirectory (Join-Path $installRoot "service\native")
     & $serviceExecutable /install-wfp
     if ($LASTEXITCODE -ne 0) { throw "No se pudo instalar el componente WFP firmado (código $LASTEXITCODE)." }
     $wfpInstalled = $true
@@ -252,8 +229,6 @@ catch {
         if ($previousMoved -and (Test-Path -LiteralPath $backupRoot)) { Move-Item -LiteralPath $backupRoot -Destination $installRoot }
     } catch { [void]$rollbackErrors.Add("restaurar archivos: $($_.Exception.Message)") }
     try {
-        if ($null -ne $previousConfiguration) { [IO.File]::WriteAllBytes($configPath, $previousConfiguration) }
-        elseif (Test-Path -LiteralPath $configPath) { Remove-Item -LiteralPath $configPath -Force }
         $previousServiceExecutable = Join-Path $installRoot "service\Qrioso NoPing Service.exe"
         if ($serviceExisted -and (Test-Path -LiteralPath $previousServiceExecutable)) {
             & $previousServiceExecutable /install-wfp | Out-Null

@@ -1,9 +1,5 @@
 [CmdletBinding()]
-param(
-    [Parameter(Mandatory = $true)]
-    [Alias("EnvFile")]
-    [string]$InfraEnvironmentFile
-)
+param()
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
@@ -18,7 +14,6 @@ if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administra
 
 $root = $PSScriptRoot
 Set-Location $root
-$infraPath = (Get-Item -LiteralPath $InfraEnvironmentFile -Force -ErrorAction Stop).FullName
 
 function Find-QriosoDevelopmentCertificate {
     Get-ChildItem -Path "Cert:\CurrentUser\My" |
@@ -52,7 +47,6 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 & (Join-Path $root "build-windows.ps1") `
-    -InfraEnvironmentFile $infraPath `
     -SigningCertificateThumbprint $certificate.Thumbprint `
     -DriverSigningMode Test
 
