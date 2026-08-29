@@ -8,10 +8,12 @@ $repositoryRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot "..\..\.."))
 $infraReaderPath = Join-Path $repositoryRoot "apps\windows\build\Read-InfraEnvironment.ps1"
 . $infraReaderPath
 . (Join-Path $repositoryRoot "apps\windows\build\Test-CodeSigningCertificate.ps1")
+. (Join-Path $repositoryRoot "apps\windows\build\Get-DotNetSdkVersion.ps1")
 foreach ($scriptPath in @(
     (Join-Path $repositoryRoot "build-windows.ps1"),
     (Join-Path $repositoryRoot "build-windows-pilot.ps1"),
-    (Join-Path $repositoryRoot "apps\windows\build\Test-CodeSigningCertificate.ps1")
+    (Join-Path $repositoryRoot "apps\windows\build\Test-CodeSigningCertificate.ps1"),
+    (Join-Path $repositoryRoot "apps\windows\build\Get-DotNetSdkVersion.ps1")
 )) {
     $parseTokens = $null
     $parseErrors = $null
@@ -19,6 +21,15 @@ foreach ($scriptPath in @(
     if ($parseErrors.Count -gt 0) {
         throw "PowerShell inválido en $scriptPath`: $($parseErrors[0].Message)"
     }
+}
+
+$detectedSdkVersion = ConvertTo-QriosoDotNetSdkVersion -VersionOutput @("10.0.100") -ExitCode 0
+if ($detectedSdkVersion -ne "10.0.100") {
+    throw "No se reconoció una salida válida de .NET SDK 10."
+}
+if ((ConvertTo-QriosoDotNetSdkVersion -VersionOutput @() -ExitCode 1) -or
+    (ConvertTo-QriosoDotNetSdkVersion -VersionOutput @("PowerShell 7.5.4") -ExitCode 0)) {
+    throw "Se aceptó una salida que no corresponde a un .NET SDK válido."
 }
 
 $infraReaderSource = [IO.File]::ReadAllText($infraReaderPath)
@@ -133,6 +144,13 @@ foreach ($requiredValue in @(
 )) {
     if (-not $buildSource.Contains($requiredValue, [StringComparison]::Ordinal)) {
         throw "build-windows.ps1 no incrusta la configuración esperada: $requiredValue"
+    }
+}
+
+$pilotBuildSource = [IO.File]::ReadAllText((Join-Path $repositoryRoot "build-windows-pilot.ps1"))
+foreach ($requiredValue in @('Install-QriosoDotNetSdk10', 'Microsoft.DotNet.SDK.10', 'Get-QriosoDotNetSdkVersion')) {
+    if (-not $pilotBuildSource.Contains($requiredValue, [StringComparison]::Ordinal)) {
+        throw "build-windows-pilot.ps1 no prepara automáticamente .NET SDK 10: $requiredValue"
     }
 }
 

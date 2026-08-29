@@ -18,6 +18,7 @@ $root = $PSScriptRoot
 
 . (Join-Path $root "apps\windows\build\Read-InfraEnvironment.ps1")
 . (Join-Path $root "apps\windows\build\Test-CodeSigningCertificate.ps1")
+. (Join-Path $root "apps\windows\build\Get-DotNetSdkVersion.ps1")
 $infraEnvironment = Read-QriosoInfraEnvironment -Path (Join-Path $root ".env.infra")
 
 function Get-SignTool {
@@ -94,10 +95,10 @@ function Invoke-QriosoSign {
 }
 
 if ([System.Environment]::OSVersion.Platform -ne [System.PlatformID]::Win32NT) { throw "Este script debe ejecutarse en una PC con Windows." }
-if (-not (Get-Command dotnet -ErrorAction SilentlyContinue)) {
-    throw "No se encontró .NET SDK 10. Instala Visual Studio con WinUI/Windows App SDK, Windows 11 SDK y .NET 10 SDK."
+$sdkVersion = Get-QriosoDotNetSdkVersion
+if (-not $sdkVersion) {
+    throw "No hay un .NET SDK compatible con global.json. Ejecuta build-windows-pilot.ps1 para instalar automáticamente .NET SDK 10."
 }
-$sdkVersion = (& dotnet --version).Trim()
 if (-not $sdkVersion.StartsWith("10.")) { throw "Se requiere .NET SDK 10; versión encontrada: $sdkVersion" }
 
 Set-Location $root

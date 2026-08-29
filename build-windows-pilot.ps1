@@ -15,6 +15,35 @@ if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administra
 $root = $PSScriptRoot
 Set-Location $root
 . (Join-Path $root "apps\windows\build\Test-CodeSigningCertificate.ps1")
+. (Join-Path $root "apps\windows\build\Get-DotNetSdkVersion.ps1")
+
+function Install-QriosoDotNetSdk10 {
+    $sdkVersion = Get-QriosoDotNetSdkVersion
+    if ($sdkVersion -and $sdkVersion.StartsWith("10.")) { return }
+
+    $winget = Get-Command winget.exe -ErrorAction SilentlyContinue
+    if (-not $winget) {
+        throw "Falta .NET SDK 10 y winget no está disponible para instalarlo automáticamente."
+    }
+
+    Write-Host "Instalando .NET SDK 10..." -ForegroundColor Cyan
+    & $winget.Source install `
+        --id Microsoft.DotNet.SDK.10 `
+        --exact `
+        --source winget `
+        --scope machine `
+        --accept-source-agreements `
+        --accept-package-agreements | Out-Host
+    if ($LASTEXITCODE -ne 0) { throw "No se pudo instalar .NET SDK 10 mediante winget." }
+
+    $dotnetDirectory = Join-Path $env:ProgramFiles "dotnet"
+    $env:Path = "$dotnetDirectory;$env:Path"
+    $sdkVersion = Get-QriosoDotNetSdkVersion -DotNetExecutable (Join-Path $dotnetDirectory "dotnet.exe")
+    if (-not $sdkVersion -or -not $sdkVersion.StartsWith("10.")) {
+        throw ".NET SDK 10 terminó de instalarse, pero no quedó disponible en esta sesión."
+    }
+    Write-Host ".NET SDK $sdkVersion listo." -ForegroundColor Green
+}
 
 function Find-QriosoDevelopmentCertificate {
     Get-ChildItem -Path "Cert:\CurrentUser\My" |
@@ -30,6 +59,8 @@ function Find-QriosoDevelopmentCertificate {
         Sort-Object NotAfter -Descending |
         Select-Object -First 1
 }
+
+Install-QriosoDotNetSdk10
 
 $certificate = Find-QriosoDevelopmentCertificate
 if (-not $certificate) {
