@@ -5,9 +5,8 @@ param(
     [ValidateSet("Release")]
     [string]$Configuration = "Release",
     [Parameter(Mandatory = $true)]
-    [string]$AccessApiBaseUri,
-    [Parameter(Mandatory = $true)]
-    [string]$TlsSpkiPin,
+    [Alias("EnvFile")]
+    [string]$InfraEnvironmentFile,
     [Parameter(Mandatory = $true)]
     [string]$SigningCertificateThumbprint,
     [ValidateSet("Microsoft", "Test")]
@@ -18,6 +17,12 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
+$root = $PSScriptRoot
+
+. (Join-Path $root "apps\windows\build\Read-InfraEnvironment.ps1")
+$infraEnvironment = Read-QriosoInfraEnvironment -Path $InfraEnvironmentFile
+$AccessApiBaseUri = $infraEnvironment.AccessApiBaseUri
+$TlsSpkiPin = $infraEnvironment.TlsSpkiPin
 
 function Get-SignTool {
     $command = Get-Command signtool.exe -ErrorAction SilentlyContinue
@@ -107,7 +112,6 @@ if (-not $accessUri.IsAbsoluteUri -or $accessUri.Scheme -ne "https" -or $accessU
 }
 if ($TlsSpkiPin -notmatch "^sha256/[A-Za-z0-9+/]{43}=$") { throw "TlsSpkiPin debe tener el formato sha256/<base64 SHA-256>." }
 
-$root = $PSScriptRoot
 Set-Location $root
 $windowsRoot = Join-Path $root "apps\windows"
 if ([string]::IsNullOrWhiteSpace($NativeArtifactsPath)) {

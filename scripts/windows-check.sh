@@ -14,4 +14,5 @@ docker run --rm \
 docker run --rm \
   --volume "${PROJECT_ROOT}:/source:ro" \
   mcr.microsoft.com/powershell:7.5-alpine-3.20 \
-  pwsh -NoLogo -NoProfile -File /source/apps/windows/packaging/test-integrity.ps1
+  pwsh -NoLogo -NoProfile -Command \
+  '& /source/apps/windows/packaging/test-infra-environment.ps1; & /source/apps/windows/packaging/test-integrity.ps1'

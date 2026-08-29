@@ -205,10 +205,19 @@ No existe compilación remota ni workflow de GitHub. Copia o clona el repositori
 ```powershell
 Set-ExecutionPolicy -Scope Process Bypass
 .\build-windows.ps1 `
-  -AccessApiBaseUri "https://<ELASTIC-IP>:8443" `
-  -TlsSpkiPin "sha256/<PIN-IMPRESO-POR-INFRA-UP>" `
+  -InfraEnvironmentFile ".\.env.infra" `
   -SigningCertificateThumbprint "<THUMBPRINT-CODE-SIGNING-QRIOSO>"
 ```
+
+`make infra-up` genera `.env.infra` con el contrato exacto que consume el build de Windows: `AccessApiBaseUri` y `TlsSpkiPin`. Copia ese archivo junto al repositorio en la PC Windows y pásalo con `-InfraEnvironmentFile`; las rutas y llaves WireGuard se obtienen dinámicamente al crear la sesión.
+
+Para el piloto local, ejecuta en macOS:
+
+```bash
+make windows-command
+```
+
+El resultado es un único comando listo para copiar y pegar en un PowerShell abierto como Administrador, desde la raíz del repositorio en la PC Windows. Ese comando valida `.env.infra`, reutiliza o crea el certificado local de desarrollo, habilita Test Mode y ejecuta el build completo.
 
 Para el piloto exclusivo del propietario puede usarse `-DriverSigningMode Test` con Windows Test Mode y el certificado `Development`; ese ZIP no se distribuye.
 
@@ -259,6 +268,7 @@ make infra-destroy   Elimina todo; exige CONFIRM_DESTROY exacto
 make relay-test      Ejecuta las pruebas Go dentro de Docker
 make relay-build     Produce binarios Linux ARM64
 make windows-check   Prueba .NET, compila el Windows Service y valida el staging del instalador en Docker
+make windows-command Valida .env.infra e imprime el comando del piloto listo para pegar en Windows
 ```
 
 ## Límites del MVP

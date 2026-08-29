@@ -29,10 +29,11 @@ Requisitos:
 ```powershell
 Set-ExecutionPolicy -Scope Process Bypass
 .\build-windows.ps1 `
-  -AccessApiBaseUri "https://<ELASTIC-IP>:8443" `
-  -TlsSpkiPin "sha256/<PIN-SPKI>" `
+  -InfraEnvironmentFile ".\.env.infra" `
   -SigningCertificateThumbprint "<THUMBPRINT-QRIOSO>"
 ```
+
+El archivo `.env.infra`, generado por `make infra-up`, contiene únicamente `AccessApiBaseUri` y `TlsSpkiPin`. El thumbprint y el modo de firma siguen siendo parámetros locales del proceso de build, no configuración de infraestructura ni de ejecución de la app.
 
 Produce `dist\windows\QriosoNoPing-win-x64.zip`. El paquete lleva configuración TLS sellada, firmas con timestamp, catálogo WFP validado y un manifiesto SHA-256 firmado. `install.ps1` verifica todo antes de elevar cambios, instala/actualiza WFP, aplica ACL, registra recuperación del servicio, crea accesos directos y registra la app en “Aplicaciones instaladas”. Ante un error restaura la versión anterior.
 

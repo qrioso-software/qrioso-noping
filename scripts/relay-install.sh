@@ -73,6 +73,7 @@ temporary_dir="$(mktemp -d)"
 artifact_path="${temporary_dir}/ridenow-relay-linux-arm64.tar.gz"
 parameters_path="${temporary_dir}/ssm-parameters.json"
 s3_key=""
+infra_env_temp=""
 
 cleanup() {
   if [[ -n "${s3_key}" ]]; then
@@ -80,6 +81,9 @@ cleanup() {
       --profile "${AWS_PROFILE}" \
       --region "${AWS_REGION}" \
       >/dev/null 2>&1 || true
+  fi
+  if [[ -n "${infra_env_temp}" && -f "${infra_env_temp}" ]]; then
+    rm -f -- "${infra_env_temp}"
   fi
   rm -rf -- "${temporary_dir}"
 }
@@ -181,11 +185,23 @@ remote_output="$(aws ssm get-command-invocation \
   --instance-id "${instance_id}" \
   --query StandardOutputContent \
   --output text)"
-if [[ "${remote_output}" == *"TLS_SPKI_PIN=sha256/"* ]]; then
-  printf '%s\n' "${remote_output}" | grep 'TLS_SPKI_PIN=sha256/' | tail -n 1
-else
+tls_spki_line="$(printf '%s\n' "${remote_output}" | grep '^TLS_SPKI_PIN=sha256/' | tail -n 1 || true)"
+tls_spki_pin="${tls_spki_line#TLS_SPKI_PIN=}"
+if [[ ! "${tls_spki_pin}" =~ ^sha256/[A-Za-z0-9+/]{43}=$ ]]; then
   echo "La instalación terminó sin devolver el pin SPKI del certificado TLS." >&2
   exit 1
 fi
 
+infra_env_temp="$(mktemp "${PROJECT_ROOT}/.env.infra.tmp.XXXXXX")"
+chmod 0600 "${infra_env_temp}"
+printf '%s\n' \
+  '# Configuración de infraestructura consumida por build-windows.ps1' \
+  "AccessApiBaseUri=https://${elastic_ip}:8443" \
+  "TlsSpkiPin=${tls_spki_pin}" \
+  > "${infra_env_temp}"
+mv -f -- "${infra_env_temp}" "${PROJECT_ROOT}/.env.infra"
+infra_env_temp=""
+
+printf '%s\n' "${tls_spki_line}"
 echo "Servicios de control instalados en ${instance_id} por SSM y artefacto SHA-256 ${artifact_sha256}."
+echo "Configuración para el build de Windows guardada en ${PROJECT_ROOT}/.env.infra."
