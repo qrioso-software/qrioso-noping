@@ -13,7 +13,8 @@ foreach ($scriptPath in @(
     (Join-Path $repositoryRoot "build-windows.ps1"),
     (Join-Path $repositoryRoot "build-windows-pilot.ps1"),
     (Join-Path $repositoryRoot "apps\windows\build\Test-CodeSigningCertificate.ps1"),
-    (Join-Path $repositoryRoot "apps\windows\build\Get-DotNetSdkVersion.ps1")
+    (Join-Path $repositoryRoot "apps\windows\build\Get-DotNetSdkVersion.ps1"),
+    (Join-Path $repositoryRoot "apps\windows\build\Install-NativeBuildDependencies.ps1")
 )) {
     $parseTokens = $null
     $parseErrors = $null
@@ -148,9 +149,26 @@ foreach ($requiredValue in @(
 }
 
 $pilotBuildSource = [IO.File]::ReadAllText((Join-Path $repositoryRoot "build-windows-pilot.ps1"))
-foreach ($requiredValue in @('Install-QriosoDotNetSdk10', 'Microsoft.DotNet.SDK.10', 'Get-QriosoDotNetSdkVersion')) {
+foreach ($requiredValue in @('Install-QriosoDotNetSdk10', 'Microsoft.DotNet.SDK.10', 'Get-QriosoDotNetSdkVersion', 'Install-QriosoNativeBuildDependencies')) {
     if (-not $pilotBuildSource.Contains($requiredValue, [StringComparison]::Ordinal)) {
         throw "build-windows-pilot.ps1 no prepara automáticamente .NET SDK 10: $requiredValue"
+    }
+}
+
+$nativeDependenciesSource = [IO.File]::ReadAllText((Join-Path $repositoryRoot "apps\windows\build\Install-NativeBuildDependencies.ps1"))
+foreach ($requiredValue in @(
+    'Microsoft.VisualStudio.2022.BuildTools',
+    'Microsoft.VisualStudio.Component.VC.Tools.x86.x64',
+    'Microsoft.VisualStudio.Component.VC.Runtimes.x86.x64.Spectre',
+    'Component.Microsoft.Windows.DriverKit.BuildTools',
+    'Microsoft.WindowsSDK.10.0.26100',
+    'Microsoft.WindowsWDK.10.0.26100',
+    'Inf2Cat.exe',
+    'InfVerif.exe',
+    'WindowsDriver.Common.targets'
+)) {
+    if (-not $nativeDependenciesSource.Contains($requiredValue, [StringComparison]::Ordinal)) {
+        throw "El bootstrap nativo no contiene el requisito esperado: $requiredValue"
     }
 }
 

@@ -16,6 +16,7 @@ $root = $PSScriptRoot
 Set-Location $root
 . (Join-Path $root "apps\windows\build\Test-CodeSigningCertificate.ps1")
 . (Join-Path $root "apps\windows\build\Get-DotNetSdkVersion.ps1")
+. (Join-Path $root "apps\windows\build\Install-NativeBuildDependencies.ps1")
 
 function Install-QriosoDotNetSdk10 {
     $sdkVersion = Get-QriosoDotNetSdkVersion
@@ -61,6 +62,7 @@ function Find-QriosoDevelopmentCertificate {
 }
 
 Install-QriosoDotNetSdk10
+Install-QriosoNativeBuildDependencies
 
 $certificate = Find-QriosoDevelopmentCertificate
 if (-not $certificate) {
