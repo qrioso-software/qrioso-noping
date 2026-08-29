@@ -8,6 +8,8 @@ source "${SCRIPT_DIR}/load-env.sh"
 windows_command="$(${SCRIPT_DIR}/windows-command.sh)"
 grep -Fqx -- "$windows_command" "${PROJECT_ROOT}/README.md"
 grep -Fqx -- "$windows_command" "${PROJECT_ROOT}/apps/windows/native/README.md"
+windows_clean_command="$(${SCRIPT_DIR}/windows-clean-command.sh)"
+grep -Fqx -- "$windows_clean_command" "${PROJECT_ROOT}/README.md"
 
 docker run --rm \
   --volume "${PROJECT_ROOT}:/source:ro" \

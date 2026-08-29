@@ -12,6 +12,7 @@ $infraReaderPath = Join-Path $repositoryRoot "apps\windows\build\Read-InfraEnvir
 foreach ($scriptPath in @(
     (Join-Path $repositoryRoot "build-windows.ps1"),
     (Join-Path $repositoryRoot "build-windows-pilot.ps1"),
+    (Join-Path $repositoryRoot "clean-windows-pilot.ps1"),
     (Join-Path $repositoryRoot "apps\windows\build\Test-CodeSigningCertificate.ps1"),
     (Join-Path $repositoryRoot "apps\windows\build\Get-DotNetSdkVersion.ps1"),
     (Join-Path $repositoryRoot "apps\windows\build\Install-NativeBuildDependencies.ps1")
@@ -152,6 +153,22 @@ $pilotBuildSource = [IO.File]::ReadAllText((Join-Path $repositoryRoot "build-win
 foreach ($requiredValue in @('Install-QriosoDotNetSdk10', 'Microsoft.DotNet.SDK.10', 'Get-QriosoDotNetSdkVersion', 'Install-QriosoNativeBuildDependencies')) {
     if (-not $pilotBuildSource.Contains($requiredValue, [StringComparison]::Ordinal)) {
         throw "build-windows-pilot.ps1 no prepara automáticamente .NET SDK 10: $requiredValue"
+    }
+}
+
+$pilotCleanupSource = [IO.File]::ReadAllText((Join-Path $repositoryRoot "clean-windows-pilot.ps1"))
+foreach ($requiredValue in @(
+    'QriosoNoPingWfp',
+    'QriosoNoPing.Wfp.sys',
+    '/delete-driver',
+    '/uninstall',
+    '/force',
+    '/set testsigning off',
+    'CN=Qrioso Software Consulting Development',
+    'Restart-Computer -Force'
+)) {
+    if (-not $pilotCleanupSource.Contains($requiredValue, [StringComparison]::OrdinalIgnoreCase)) {
+        throw "clean-windows-pilot.ps1 no contiene la limpieza esperada: $requiredValue"
     }
 }
 

@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 
-.PHONY: help aws-verify infra-build infra-synth infra-diff infra-deploy infra-up infra-down infra-status infra-update infra-destroy relay-test relay-build windows-check windows-command clean
+.PHONY: help aws-verify infra-build infra-synth infra-diff infra-deploy infra-up infra-down infra-status infra-update infra-destroy relay-test relay-build windows-check windows-command windows-clean-command clean
 
 help:
 	@sed -n 's/^## //p' README.md
@@ -46,6 +46,9 @@ windows-check:
 
 windows-command:
 	@./scripts/windows-command.sh
+
+windows-clean-command:
+	@./scripts/windows-clean-command.sh
 
 clean:
 	rm -rf infra/cdk.out dist

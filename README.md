@@ -226,6 +226,14 @@ $gitCommand = Get-Command git.exe -ErrorAction SilentlyContinue; $gitPath = if (
 
 Para el piloto exclusivo del propietario puede usarse `-DriverSigningMode Test` con Windows Test Mode y el certificado `Development`; ese ZIP no se distribuye.
 
+Si Fortnite o Easy Anti-Cheat no abre con Test Mode o con el driver piloto, limpia completamente la instalacion desde la raiz del repositorio. En macOS, `make windows-clean-command` imprime el comando; pegalo en PowerShell como Administrador en Windows:
+
+```powershell
+$gitCommand = Get-Command git.exe -ErrorAction SilentlyContinue; $gitPath = if ($gitCommand) { $gitCommand.Source } else { Join-Path $env:ProgramFiles "Git\cmd\git.exe" }; if (-not (Test-Path -LiteralPath $gitPath)) { throw "Git for Windows no esta disponible; actualiza el repositorio manualmente antes de limpiar el piloto." }; & $gitPath pull --ff-only origin main; if ($LASTEXITCODE -ne 0) { throw "git pull fallo; no se ejecuto una copia posiblemente desactualizada de la limpieza." }; Set-ExecutionPolicy -Scope Process Bypass -Force; & ".\clean-windows-pilot.ps1"
+```
+
+La limpieza detiene y elimina los servicios de Qrioso, retira `QriosoNoPingWfp` del Driver Store, elimina el certificado local `Development`, deshabilita `TESTSIGNING` y borra la app. Debes reiniciar Windows antes de volver a abrir el juego. Si deshabilitaste Secure Boot en el BIOS para activar el piloto, vuelve a habilitarlo manualmente. Para conservar el acceso local cifrado usa `-KeepLocalAccess`; para reiniciar automaticamente al terminar usa `-Restart`.
+
 El script ejecuta las pruebas y produce:
 
 ```text
@@ -274,6 +282,7 @@ make relay-test      Ejecuta las pruebas Go dentro de Docker
 make relay-build     Produce binarios Linux ARM64
 make windows-check   Prueba .NET, compila el Windows Service y valida el staging del instalador en Docker
 make windows-command Imprime el comando sin parámetros del piloto listo para pegar en Windows
+make windows-clean-command Imprime el comando que elimina la app, el driver piloto y Test Mode
 ```
 
 ## Límites del MVP
