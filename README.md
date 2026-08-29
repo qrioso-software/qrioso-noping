@@ -219,10 +219,10 @@ make windows-command
 El comando vigente, para copiar y pegar en PowerShell como Administrador desde la raíz del repositorio en Windows, es:
 
 ```powershell
-git pull --ff-only origin main; if ($LASTEXITCODE -eq 0) { Set-ExecutionPolicy -Scope Process Bypass -Force; & ".\build-windows-pilot.ps1" }
+$gitPath = (Get-Command git.exe -ErrorAction SilentlyContinue).Source; if (-not $gitPath) { $winget = Get-Command winget.exe -ErrorAction SilentlyContinue; if (-not $winget) { throw "Git for Windows no está instalado y winget no está disponible." }; & $winget.Source install --id Git.Git --exact --source winget --scope machine --accept-source-agreements --accept-package-agreements; if ($LASTEXITCODE -ne 0) { throw "No se pudo instalar Git for Windows." }; $gitPath = Join-Path $env:ProgramFiles "Git\cmd\git.exe"; if (-not (Test-Path -LiteralPath $gitPath)) { throw "Git se instaló, pero no se encontró git.exe." } }; $env:Path = "$(Split-Path -Parent $gitPath);$env:Path"; & $gitPath pull --ff-only origin main; if ($LASTEXITCODE -ne 0) { throw "git pull falló." }; Set-ExecutionPolicy -Scope Process Bypass -Force; & ".\build-windows-pilot.ps1"
 ```
 
-`make windows-command` imprime exactamente ese mismo comando. `build-windows-pilot.ps1` reutiliza o crea el certificado local de desarrollo, habilita Test Mode y ejecuta el build completo. En el primer arranque, el servicio registra automáticamente la llave compilada y guarda el estado con DPAPI.
+`make windows-command` imprime exactamente ese mismo comando. Si Git for Windows no existe, el comando lo instala mediante `winget`; después actualiza `main` y ejecuta el piloto. `build-windows-pilot.ps1` reutiliza o crea el certificado local de desarrollo, habilita Test Mode y ejecuta el build completo. En el primer arranque, el servicio registra automáticamente la llave compilada y guarda el estado con DPAPI.
 
 Para el piloto exclusivo del propietario puede usarse `-DriverSigningMode Test` con Windows Test Mode y el certificado `Development`; ese ZIP no se distribuye.
 

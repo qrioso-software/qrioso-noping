@@ -25,7 +25,8 @@ function Read-QriosoInfraEnvironment {
         $key = $line.Substring(0, $separator).Trim()
         $value = $line.Substring($separator + 1).Trim()
         if (-not $allowedKeys.Contains($key)) { throw ".env.infra contiene la clave no admitida '$key'." }
-        if (-not $values.TryAdd($key, $value)) { throw ".env.infra repite la clave '$key'." }
+        if ($values.ContainsKey($key)) { throw ".env.infra repite la clave '$key'." }
+        $values.Add($key, $value)
         if ([string]::IsNullOrWhiteSpace($value)) { throw ".env.infra dejó vacía la clave '$key'." }
     }
 

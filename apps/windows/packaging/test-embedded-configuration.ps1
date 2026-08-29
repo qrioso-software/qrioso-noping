@@ -5,7 +5,8 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
 $repositoryRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot "..\..\.."))
-. (Join-Path $repositoryRoot "apps\windows\build\Read-InfraEnvironment.ps1")
+$infraReaderPath = Join-Path $repositoryRoot "apps\windows\build\Read-InfraEnvironment.ps1"
+. $infraReaderPath
 . (Join-Path $repositoryRoot "apps\windows\build\Test-CodeSigningCertificate.ps1")
 foreach ($scriptPath in @(
     (Join-Path $repositoryRoot "build-windows.ps1"),
@@ -18,6 +19,11 @@ foreach ($scriptPath in @(
     if ($parseErrors.Count -gt 0) {
         throw "PowerShell inválido en $scriptPath`: $($parseErrors[0].Message)"
     }
+}
+
+$infraReaderSource = [IO.File]::ReadAllText($infraReaderPath)
+if ($infraReaderSource.Contains(".TryAdd(", [StringComparison]::Ordinal)) {
+    throw "Read-InfraEnvironment.ps1 usa Dictionary.TryAdd, que no existe en Windows PowerShell 5.1/.NET Framework."
 }
 
 $codeSigningOids = [System.Security.Cryptography.OidCollection]::new()
@@ -48,6 +54,21 @@ AccessToken=qnp_pilot-windows_AQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
     if ($parsed.AccessApiBaseUri -ne "https://relay.example:8443" -or
         $parsed.AccessToken -ne "qnp_pilot-windows_AQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA") {
         throw "El contrato de .env.infra no produjo la configuración incrustable esperada."
+    }
+
+    $duplicateEnvironmentPath = Join-Path $temporaryRoot "duplicate.env.infra"
+    [IO.File]::WriteAllText($duplicateEnvironmentPath, @"
+AccessApiBaseUri=https://relay.example:8443
+TlsSpkiPin=sha256/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+AccessToken=qnp_pilot-windows_AQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AccessToken=qnp_pilot-windows_AQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+"@, [Text.UTF8Encoding]::new($false))
+    try {
+        Read-QriosoInfraEnvironment -Path $duplicateEnvironmentPath | Out-Null
+        throw "Se aceptó una clave duplicada en .env.infra."
+    }
+    catch {
+        if ($_.Exception.Message -eq "Se aceptó una clave duplicada en .env.infra.") { throw }
     }
 
     $invalidEnvironmentPath = Join-Path $temporaryRoot "invalid.env.infra"
