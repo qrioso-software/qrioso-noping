@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param()
 
 Set-StrictMode -Version Latest
@@ -6,9 +6,11 @@ $ErrorActionPreference = "Stop"
 
 $repositoryRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot "..\..\.."))
 . (Join-Path $repositoryRoot "apps\windows\build\Read-InfraEnvironment.ps1")
+. (Join-Path $repositoryRoot "apps\windows\build\Test-CodeSigningCertificate.ps1")
 foreach ($scriptPath in @(
     (Join-Path $repositoryRoot "build-windows.ps1"),
-    (Join-Path $repositoryRoot "build-windows-pilot.ps1")
+    (Join-Path $repositoryRoot "build-windows-pilot.ps1"),
+    (Join-Path $repositoryRoot "apps\windows\build\Test-CodeSigningCertificate.ps1")
 )) {
     $parseTokens = $null
     $parseErrors = $null
@@ -16,6 +18,21 @@ foreach ($scriptPath in @(
     if ($parseErrors.Count -gt 0) {
         throw "PowerShell inválido en $scriptPath`: $($parseErrors[0].Message)"
     }
+}
+
+$codeSigningOids = [System.Security.Cryptography.OidCollection]::new()
+[void]$codeSigningOids.Add([System.Security.Cryptography.Oid]::new("1.3.6.1.5.5.7.3.3"))
+$codeSigningExtension = [System.Security.Cryptography.X509Certificates.X509EnhancedKeyUsageExtension]::new(
+    $codeSigningOids,
+    $false
+)
+$certificateWithCodeSigning = [PSCustomObject]@{ Extensions = @($codeSigningExtension) }
+if (-not (Test-QriosoCodeSigningCertificate -Certificate $certificateWithCodeSigning)) {
+    throw "No se reconoció una extensión EKU válida de Code Signing."
+}
+$certificateWithoutCodeSigning = [PSCustomObject]@{ Extensions = @() }
+if (Test-QriosoCodeSigningCertificate -Certificate $certificateWithoutCodeSigning) {
+    throw "Se aceptó un certificado sin la extensión EKU de Code Signing."
 }
 
 $temporaryRoot = Join-Path ([IO.Path]::GetTempPath()) "qrioso-embedded-$([Guid]::NewGuid().ToString('N'))"

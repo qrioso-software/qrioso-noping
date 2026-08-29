@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)]
     [string]$SigningCertificateThumbprint,
@@ -67,4 +67,3 @@ $signature = Get-AuthenticodeSignature -LiteralPath $cabPath
 if ($signature.Status -ne [System.Management.Automation.SignatureStatus]::Valid) { throw "El CAB no tiene una firma Authenticode válida." }
 Write-Host "Entrega lista: $cabPath" -ForegroundColor Green
 Write-Host "Súbela como attestation signing en Microsoft Partner Center y reemplaza driver\ con el paquete firmado que devuelva Microsoft."
-

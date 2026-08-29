@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [ValidateSet("x64")]
     [string]$Architecture = "x64",
@@ -17,6 +17,7 @@ $ErrorActionPreference = "Stop"
 $root = $PSScriptRoot
 
 . (Join-Path $root "apps\windows\build\Read-InfraEnvironment.ps1")
+. (Join-Path $root "apps\windows\build\Test-CodeSigningCertificate.ps1")
 $infraEnvironment = Read-QriosoInfraEnvironment -Path (Join-Path $root ".env.infra")
 
 function Get-SignTool {
@@ -43,7 +44,7 @@ function Get-CodeSigningCertificate {
         throw "No se encontró el certificado de firma con clave privada: $normalized"
     }
     if ($certificate.NotAfter -le [DateTime]::UtcNow.AddDays(30)) { throw "El certificado de firma expira en menos de 30 días." }
-    if (-not ($certificate.EnhancedKeyUsageList.ObjectId.Value -contains "1.3.6.1.5.5.7.3.3")) {
+    if (-not (Test-QriosoCodeSigningCertificate -Certificate $certificate)) {
         throw "El certificado no permite Code Signing."
     }
     return $certificate

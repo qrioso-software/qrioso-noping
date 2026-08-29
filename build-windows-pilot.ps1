@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param()
 
 Set-StrictMode -Version Latest
@@ -14,6 +14,7 @@ if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administra
 
 $root = $PSScriptRoot
 Set-Location $root
+. (Join-Path $root "apps\windows\build\Test-CodeSigningCertificate.ps1")
 
 function Find-QriosoDevelopmentCertificate {
     Get-ChildItem -Path "Cert:\CurrentUser\My" |
@@ -22,7 +23,7 @@ function Find-QriosoDevelopmentCertificate {
             $_.Subject -eq "CN=Qrioso Software Consulting Development" -and
             $_.HasPrivateKey -and
             $_.NotAfter -gt [DateTime]::UtcNow.AddDays(30) -and
-            ($_.EnhancedKeyUsageList.ObjectId.Value -contains "1.3.6.1.5.5.7.3.3") -and
+            (Test-QriosoCodeSigningCertificate -Certificate $_) -and
             (Test-Path -LiteralPath "Cert:\LocalMachine\Root\$thumbprint") -and
             (Test-Path -LiteralPath "Cert:\LocalMachine\TrustedPublisher\$thumbprint")
         } |
